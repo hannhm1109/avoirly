@@ -3,6 +3,7 @@
 import ipaddress
 import logging
 from contextlib import asynccontextmanager
+from decimal import Decimal
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
@@ -43,8 +44,9 @@ def get_owner(request: Request):
 
 
 class LocalBoundary:
-    def __init__(self, app):
+    def __init__(self, app, web_origin="http://127.0.0.1:3000"):
         self.app = app
+        self.web_origin = web_origin
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -61,6 +63,7 @@ class LocalBoundary:
         local_origins = {
             f"http://{h}:{p}" for h in ("localhost", "127.0.0.1", "[::1]") for p in (8000, 3000)
         }
+        local_origins.add(self.web_origin)
 
         async def error(code, message, status):
             return await JSONResponse(
@@ -145,7 +148,7 @@ def create_app(settings=None, sessions=None):
     )
     app.state.settings, app.state.sessions, app.state.storage = settings, sessions, storage
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]"])
-    app.add_middleware(LocalBoundary)
+    app.add_middleware(LocalBoundary, web_origin=settings.web_origin)
 
     @app.exception_handler(DomainError)
     async def domain_error(request, exc):
@@ -248,7 +251,35 @@ def create_app(settings=None, sessions=None):
                 .offset(offset)
                 .limit(limit)
             )
-            return {"items": [case_summary(c) for c in cases], "limit": limit, "offset": offset}
+            items, totals = [], {}
+            for case in cases:
+                detail = case_detail(session, case)
+                item = case_summary(case)
+                values = {
+                    role: ext["corrected"] or ext["raw"]
+                    for role, ext in detail["extractions"].items()
+                }
+                invoice, po = values.get("INVOICE", {}), values.get("PO", {})
+                item.update(
+                    supplier_name=(invoice.get("supplier") or {}).get("name"),
+                    invoice_number=invoice.get("document_number"),
+                    po_number=po.get("document_number"),
+                )
+                items.append(item)
+                if (
+                    case.status in ("DISCREPANCY_FOUND", "CLAIM_DRAFTED", "NO_DISCREPANCY")
+                    and case.currency
+                    and case.potential_credit_net is not None
+                ):
+                    totals[case.currency] = (
+                        totals.get(case.currency, Decimal(0)) + case.potential_credit_net
+                    )
+            return {
+                "items": items,
+                "limit": limit,
+                "offset": offset,
+                "potential_credit_by_currency": {k: str(v) for k, v in totals.items()},
+            }
 
     @app.get(prefix + "/cases/{case_id}")
     def get_case(case_id: UUID, owner: owner_dep):

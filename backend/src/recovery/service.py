@@ -311,7 +311,19 @@ def enqueue(session, owner, case_id, request, key, model, *, retry=False):
     if case.version != request.expected_version:
         raise DomainError("VERSION_CONFLICT", "Case changed; reload before retrying.")
     if not model:
-        raise DomainError("MISSING_MODEL", "Configure OPENAI_MODEL before processing.", 422)
+        docs = current_documents(session, case)
+        reviewed = [latest_extraction(session, doc) for doc in docs.values()]
+        if set(docs) != {"PO", "INVOICE"} or not all(
+            ext
+            and ext.corrected_json is not None
+            and ext.corrected_by
+            and ext.input_hash == doc.sha256
+            for doc, ext in zip(docs.values(), reviewed, strict=True)
+        ):
+            raise DomainError("MISSING_MODEL", "Configure OPENAI_MODEL before extraction.", 422)
+        # Both current inputs have audited human values. No provider call is needed;
+        # the worker still applies every validation, matching and duplicate check.
+        model = "human-reviewed"
     if retry and case.status != "FAILED":
         raise DomainError("ILLEGAL_RETRY", "Only failed cases can be retried.")
     active = session.scalar(

@@ -137,6 +137,82 @@ def test_migration_and_health(env, postgres):
     command.check(postgres[2])
 
 
+def test_audited_manual_inputs_without_provider_configuration(env, pair_dict):
+    client, settings, sessions = env
+    case = ready(client)
+    app = create_app(replace(settings, model=""), sessions)
+    with TestClient(app, base_url="http://127.0.0.1", client=("127.0.0.1", 49100)) as manual:
+        missing = manual.post(
+            f"/api/v1/cases/{case['id']}/analyze",
+            json={"expected_version": case["version"]},
+            headers={"Idempotency-Key": "missing-model"},
+        )
+        assert missing.status_code == 422
+        assert missing.json()["code"] == "MISSING_MODEL"
+        revised = manual.put(
+            f"/api/v1/cases/{case['id']}/review",
+            json={
+                "expected_version": case["version"],
+                "corrected": pair_dict,
+                "reason": "Manually verified both synthetic documents",
+            },
+        ).json()
+        analyze(manual, revised)
+        factory = Mock(side_effect=AssertionError("Manual inputs must not call a provider"))
+        runner = Worker(replace(settings, model=""), sessions, extractor_factory=factory)
+        assert runner.run_once()
+        final = detail(manual, case)
+        assert final["status"] == "CLAIM_DRAFTED"
+        assert final["potential_credit_net"] == "200.00"
+        factory.assert_not_called()
+        listing = manual.get("/api/v1/cases").json()
+        assert listing["items"][0]["supplier_name"] == "Atlas Supplies"
+        assert listing["items"][0]["invoice_number"] == "INV-8821"
+        assert listing["potential_credit_by_currency"] == {"MAD": "200.00"}
+
+
+def test_list_totals_are_exact_currency_scoped_and_exclude_review(env):
+    from decimal import Decimal
+
+    from recovery.db.models import Case
+
+    client, settings, sessions = env
+    with sessions.begin() as session:
+        for currency, amount, status in [
+            ("MAD", "9000000000.01", "CLAIM_DRAFTED"),
+            ("MAD", "0.02", "DISCREPANCY_FOUND"),
+            ("EUR", "30.40", "CLAIM_DRAFTED"),
+            ("MAD", "100.00", "NEEDS_REVIEW"),
+            ("MAD", "100.00", "CLOSED"),
+        ]:
+            session.add(
+                Case(
+                    owner_id=settings.local_owner,
+                    status=status,
+                    currency=currency,
+                    potential_credit_net=Decimal(amount),
+                )
+            )
+    totals = client.get("/api/v1/cases").json()["potential_credit_by_currency"]
+    assert totals == {"MAD": "9000000000.03", "EUR": "30.40"}
+
+
+def test_configured_web_origin_still_rejects_remote_origins(env):
+    _, settings, sessions = env
+    app = create_app(replace(settings, web_origin="http://127.0.0.1:3001"), sessions)
+    with TestClient(app, base_url="http://127.0.0.1", client=("127.0.0.1", 49100)) as client:
+        assert (
+            client.get("/api/v1/cases", headers={"Origin": "http://127.0.0.1:3001"}).status_code
+            == 200
+        )
+        assert (
+            client.get("/api/v1/cases", headers={"Origin": "https://example.com"}).status_code
+            == 403
+        )
+    with pytest.raises(RuntimeError):
+        replace(settings, web_origin="https://example.com").validate()
+
+
 def test_end_to_end_private_files_decimal_report_and_audit(env, pair_dict):
     client, settings, sessions = env
     case = ready(client)

@@ -10,13 +10,15 @@ is owed.
 
 ## Build status
 
-Build Phases 1 and 2 are implemented: the Python CLI and comparison engine, plus a
-local FastAPI backend, PostgreSQL history, private uploads, durable worker, audited
-corrections, and versioned drafts. The web interface is the next phase. No sending
-integration or hosted pilot is included.
+Build Phases 1–3 are implemented: the Python CLI and comparison engine, a local
+FastAPI backend with PostgreSQL history and durable processing, and a French
+Next.js interface for uploads, source review, corrections, results and editable
+drafts. No sending integration or hosted pilot is included.
 
-Start with the [backend setup guide](docs/BACKEND.md) for Phase 2, or run the offline
-CLI example below. See [progress](docs/PROGRESS.md) and the [source specification](docs/SPEC.md).
+Start with the [web setup guide](docs/WEB.md) to use the application at
+**http://127.0.0.1:3000**, or run the offline CLI example below. The
+[backend guide](docs/BACKEND.md), [progress](docs/PROGRESS.md) and
+[source specification](docs/SPEC.md) explain the architecture and remaining gates.
 
 ## Run the example now
 

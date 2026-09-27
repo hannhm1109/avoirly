@@ -88,13 +88,55 @@ client's httpx adapter remains non-blocking; all tests passed.
 See [BACKEND.md](BACKEND.md) for setup, endpoints, recovery, deletion and local-mode
 limits. The existing Phase 1 CLI remains available unchanged in behavior.
 
+## Phase 3 implementation
+
+Authorized after the Phase 2 handoff and implemented on 27 September 2026.
+
+- French Next.js/React/TypeScript interface: paginated cases, separate document
+  uploads, source review with editable fields/lines, and results with editable drafts.
+- Responsive desktop/mobile layouts, original PDF/image previews and source pages,
+  explicit unknown values, blocking issues, pairing confirmation and correction reasons.
+- Queued/processing states, reload-safe case persistence, retries, duplicate-case
+  links, version-conflict errors, reasoned closure and confirmed deletion.
+- Subject/body editing, versioned save before clipboard/download, no email sending.
+- Supplier/invoice labels and Decimal totals supplied by the real API. Dashboard
+  totals are page-scoped, separated by currency and exclude unresolved/closed cases.
+- Same-origin API proxy restricted to loopback with Host/Origin checks; no provider
+  key in the frontend and no third-party fonts or image requests.
+- Dependency lockfile, reproducible Playwright test server and [WEB.md](WEB.md).
+
+Necessary adjustment explained before implementation: the enqueue guard permits
+comparison without a configured provider model only when **both current inputs
+already contain audited human corrections** with matching source hashes. It never
+substitutes made-up extraction values. All validation, duplicate checks, matching,
+leases and draft guards still run. This makes the review interface usable without
+an OpenAI key while keeping live extraction explicitly separate.
+
+Verification on Windows, Node 24.13.1, Python 3.14.3, real PostgreSQL 17:
+
+- **156 Python tests passed; 1 live OpenAI test skipped.** New coverage checks
+  audited model-free comparison, exact currency-separated totals and local origins.
+- **5 Chromium browser tests passed** against the real API and worker in a fresh
+  disposable PostgreSQL schema. Only extraction uses synthetic fixture values.
+- Full browser workflow: upload → missing quantity blocks draft → source review →
+  correct to 22 → rerun → **200.00 MAD excluding tax** → edit/save → reload →
+  copy/download → delete. No terminal intervention within this user journey.
+- Unresolved values remain NEEDS_REVIEW with no draft or aggregate claim amount;
+  stale edits cannot overwrite a concurrent version. Invalid formats and foreign
+  origins are rejected. Desktop/mobile captures were inspected.
+- TypeScript checking, optimized Next.js build and Python lint passed.
+
+The optional read-only WebMCP case-refresh tool is feature-detected and unregisters
+on navigation. Native execution remains unverified because no supported browser
+context was available. This does not block normal UI usage.
+
+Live extraction still needs an API key, explicitly selected compatible model and
+successful opt-in test. Browser results do not establish model extraction quality.
+The existing non-blocking Starlette test-client deprecation warning remains. The
+Docker-specific limitation from Phase 2 remains unchanged.
+
 ## Next phase
 
-Phase 2's local persistence/restart/idempotency gate passes. Stopped before Phase 3
-as the guide requires. Live extraction still needs a configured compatible model
-and successful opt-in test; this is not a completed private pilot.
-
-To continue: “Implement Build Phase 3 of Avoirly following docs/SPEC.md and docs/PROGRESS.md.”
-Phase 3 adds the four French-language web screens against this API. Authentication,
-hosted deployment, backup/restore verification, monitoring and pilot readiness remain
-Phase 4.
+Phase 3's local browser gate passes. Stop before Phase 4. Authentication, hosted
+deployment, backup/restore verification, monitoring and private pilot readiness
+remain Phase 4; no application deployment or real supplier email sending occurred.
