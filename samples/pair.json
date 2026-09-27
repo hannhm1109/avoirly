@@ -1,0 +1,82 @@
+{
+  "page_counts": {
+    "PO": 1,
+    "INVOICE": 1
+  },
+  "extraction": {
+    "purchase_order": {
+      "document_type": "PURCHASE_ORDER",
+      "document_number": "PO-124",
+      "document_date": "2026-09-15",
+      "currency": "MAD",
+      "supplier": {
+        "name": "Atlas Supplies",
+        "tax_id": "12345678"
+      },
+      "buyer": {
+        "name": "Example Cafe",
+        "tax_id": null
+      },
+      "prices_include_tax": false,
+      "adjustments_present": false,
+      "line_items": [
+        {
+          "line_number": 1,
+          "sku": "OIL-5L",
+          "description": "Huile vegetale 5L",
+          "quantity": "20",
+          "unit": "piece",
+          "unit_price": "100.00",
+          "tax_rate": "20.00",
+          "line_total": "2000.00",
+          "source": {
+            "page": 1,
+            "text": "OIL-5L 20 pieces 100.00 2000.00"
+          }
+        }
+      ],
+      "subtotal": "2000.00",
+      "tax_total": "400.00",
+      "total": "2400.00",
+      "warnings": []
+    },
+    "invoice": {
+      "document_type": "INVOICE",
+      "document_number": "INV-8821",
+      "document_date": "2026-09-18",
+      "due_date": "2026-10-18",
+      "purchase_order_reference": "PO-124",
+      "currency": "MAD",
+      "supplier": {
+        "name": "Atlas Supplies",
+        "tax_id": "12345678"
+      },
+      "buyer": {
+        "name": "Example Cafe",
+        "tax_id": null
+      },
+      "prices_include_tax": false,
+      "adjustments_present": false,
+      "line_items": [
+        {
+          "line_number": 1,
+          "sku": "OIL-5L",
+          "description": "Huile vegetale 5L",
+          "quantity": "22",
+          "unit": "piece",
+          "unit_price": "100.00",
+          "tax_rate": "20.00",
+          "line_total": "2200.00",
+          "source": {
+            "page": 1,
+            "text": "OIL-5L 22 pieces 100.00 2200.00"
+          }
+        }
+      ],
+      "subtotal": "2200.00",
+      "tax_total": "440.00",
+      "total": "2640.00",
+      "warnings": []
+    }
+  }
+}
