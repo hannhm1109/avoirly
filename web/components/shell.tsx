@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, Files, Plus, ShieldCheck } from "lucide-react";
+import { SessionStatus } from "./session-status";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -60,7 +61,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <span className="crumb-slash">/</span>Fournisseurs
           </span>
           <span className="local-label">
-            <i /> Version locale <span className="language">FR</span>
+            <SessionStatus /> <span className="language">FR</span>
           </span>
         </header>
         <main id="main" tabIndex={-1}>
@@ -69,6 +70,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <footer className="page-footer">
           <span>Avoirly</span> Spot invoice discrepancies. Simplify supplier
           claims.
+          <Link href="/confidentialite" className="privacy-link">
+            Confidentialité
+          </Link>
         </footer>
       </div>
     </div>

@@ -69,9 +69,9 @@ export default function NewCase() {
       <div className="info-note">
         <ShieldCheck size={22} />
         <p>
-          Documents conservés sur cet ordinateur. Lors d’une extraction
-          automatique, leur contenu est transmis à OpenAI. PDF : 10 pages
-          maximum. Images : 25 mégapixels maximum.
+          Documents conservés dans le stockage privé de votre version d’Avoirly.
+          Lors d’une extraction automatique, leur contenu est transmis à OpenAI.
+          PDF : 10 pages maximum. Images : 25 mégapixels maximum.
         </p>
       </div>
       {error && <ErrorNotice error={error} />}

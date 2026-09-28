@@ -23,6 +23,7 @@ from .db.models import (
     Extraction,
     InvoiceIdentity,
     Job,
+    WorkerHeartbeat,
 )
 from .db.session import create_sessions
 from .extraction import (
@@ -41,6 +42,7 @@ from .models import (
     PurchaseOrder,
     ValidatedPair,
 )
+from .operations import usage_record
 from .service import (
     change,
     cleanup_deleted,
@@ -49,7 +51,7 @@ from .service import (
     latest_extraction,
     owner_lock,
 )
-from .storage import PrivateStorage
+from .storage import create_storage
 from .validation import description_key, issue, key, validate_pair
 
 log = logging.getLogger(__name__)
@@ -140,7 +142,7 @@ def heartbeat(sessions, lease, seconds):
         job.leased_until = database_now(session) + timedelta(seconds=seconds)
 
 
-def requeue_expired(sessions, seconds):
+def requeue_expired(sessions, seconds, max_attempts=3):
     """Explicit operator action; each expired attempt is closed and replaced, never reused."""
     count = 0
     with sessions() as session:
@@ -175,6 +177,8 @@ def requeue_expired(sessions, seconds):
                 and case.status in ("PROCESSING", "DISCREPANCY_FOUND")
             ):
                 change(session, case, "fail", target="FAILED", error_code="LEASE_EXPIRED")
+                if job.attempt >= max_attempts:
+                    continue
                 change(
                     session,
                     case,
@@ -198,21 +202,24 @@ def requeue_expired(sessions, seconds):
 
 
 class Worker:
-    def __init__(self, settings, sessions, *, extractor_factory=None):
+    def __init__(self, settings, sessions, *, extractor_factory=None, storage=None):
         settings.validate()
         self.settings, self.sessions = settings, sessions
-        self.storage = PrivateStorage(settings.storage_root)
+        self.storage = storage or create_storage(settings)
+        self.worker_id = uuid4()
         self.extractor_factory = extractor_factory or (lambda model: OpenAIExtractor(model=model))
 
     def _heartbeat_loop(self, lease, stop, lost):
         while not stop.wait(self.settings.lease_seconds / 3):
             try:
                 heartbeat(self.sessions, lease, self.settings.lease_seconds)
+                self.record_heartbeat()
             except Exception:  # noqa: BLE001 - heartbeat loss must fail closed, without leaking DB errors
                 lost.set()
                 return
 
     def run_once(self):
+        self.record_heartbeat()
         cleanup_deleted(self.sessions, self.storage)
         lease = acquire_job(self.sessions, self.settings.lease_seconds)
         if lease is None:
@@ -237,6 +244,10 @@ class Worker:
             thread.join(timeout=5)
         return True
 
+    def record_heartbeat(self):
+        with self.sessions.begin() as session:
+            session.merge(WorkerHeartbeat(id=self.worker_id, last_seen=database_now(session)))
+
     def fail(self, lease, code):
         try:
             with guarded(self.sessions, lease) as (session, case, job):
@@ -258,7 +269,7 @@ class Worker:
             doc_info = {
                 role: {
                     "id": d.id,
-                    "path": self.storage.path(d.storage_key),
+                    "key": d.storage_key,
                     "sha256": d.sha256,
                     "pages": d.page_count,
                 }
@@ -296,7 +307,8 @@ class Worker:
                     extraction_ids[role] = str(cached.id)
             if reusable:
                 continue
-            file = validate_file(info["path"])
+            with self.storage.materialize(info["key"]) as path:
+                file = validate_file(path)
             if file.sha256 != info["sha256"]:
                 raise ProcessingError("SOURCE_CHANGED", "Stored document hash changed.")
             adapter = adapter or self.extractor_factory(lease.model)
@@ -326,6 +338,9 @@ class Worker:
                     duration_ms=metadata.get("duration_ms"),
                 )
                 session.add(record)
+                usage = usage_record(self.settings, lease.model, metadata)
+                if usage is not None:
+                    session.add(usage)
                 values[role], extraction_ids[role] = value, str(record.id)
 
         raw = DocumentExtractionResult(
@@ -479,17 +494,24 @@ def main(argv=None):
     settings = Settings.from_env()
     engine, sessions = create_sessions(settings.database_url)
     worker = Worker(settings, sessions)
+    worker.storage.check_private()
     try:
         if args.requeue_expired:
-            print(f"Requeued {requeue_expired(sessions, settings.lease_seconds)} expired jobs.")
+            print(
+                f"Requeued {requeue_expired(sessions, settings.lease_seconds, settings.max_attempts)} expired jobs."
+            )
             return
         if args.once:
             worker.run_once()
             return
         stop = threading.Event()
         while True:
-            if not worker.run_once():
-                stop.wait(2)
+            try:
+                if not worker.run_once():
+                    stop.wait(2)
+            except Exception as exc:  # noqa: BLE001 - keep polling through temporary outages without leaking SQL
+                log.error("worker_poll_failed type=%s", type(exc).__name__)
+                stop.wait(5)
     except KeyboardInterrupt:
         pass
     finally:

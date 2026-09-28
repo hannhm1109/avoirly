@@ -394,7 +394,7 @@ export default function CasePage() {
         </h2>
         <p>
           {confirmDelete
-            ? "Les documents, données extraites et brouillons seront supprimés de cet ordinateur. Cette action est définitive."
+            ? "Les documents, données extraites et brouillons seront supprimés du stockage actif. Des copies peuvent subsister dans les sauvegardes selon leur conservation. Cette action est définitive."
             : "La clôture empêche les modifications. Elle ne confirme aucun envoi ou remboursement."}
         </p>
         {!confirmDelete && (

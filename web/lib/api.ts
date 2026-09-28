@@ -1,6 +1,13 @@
 import type { CaseDetail, CasePage, CaseSummary } from "./types";
 
 const messages: Record<string, string> = {
+  UNAUTHENTICATED: "Connectez-vous pour accéder à vos dossiers.",
+  PILOT_ACCESS_REQUIRED:
+    "Ce compte n’a pas encore accès au pilote. Contactez la personne qui vous a invité.",
+  DAILY_QUOTA:
+    "Votre limite quotidienne est atteinte. Elle est renouvelée à 00:00 UTC.",
+  RETRY_LIMIT:
+    "Le nombre maximal de tentatives est atteint. Vérifiez les documents avant de créer une nouvelle version.",
   VERSION_CONFLICT: "Ce dossier a changé. Rechargez-le avant de réessayer.",
   DUPLICATE_FILE: "Ce document est déjà associé à un dossier.",
   IDEMPOTENCY_CONFLICT:
@@ -57,6 +64,8 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
+    if (response.status === 401 && typeof window !== "undefined")
+      window.location.assign("/connexion");
     throw new ApiError(
       data.code || "SERVER_UNAVAILABLE",
       response.status,

@@ -4,6 +4,12 @@ Phase 3 adds the four Next.js screens to the existing Python API and durable
 worker. Node.js 20.9+ is required; verification used Node 24.13.1 and npm 10.8.2.
 Dependencies are pinned by `web/package-lock.json`.
 
+Phase 4 adds French password sign-in, sign-out and privacy information. A
+server-side API gateway forwards the session token to Python for owner checks;
+HttpOnly/Secure cookies hold hosted sessions. No provider secret enters browser
+code. Local mode still works without a Supabase account. For hosted configuration
+and live acceptance checks, see [CONFIGURE.md](CONFIGURE.md).
+
 ## Start locally
 
 First complete [backend setup](BACKEND.md), including the database migration.
@@ -42,7 +48,8 @@ Next.js proxies `/api/v1` to `http://127.0.0.1:8000`. Override only with another
 loopback HTTP origin using `AVOIRLY_API_ORIGIN` (see `web/.env.example`). The API
 can allow an additional local frontend origin with `AVOIRLY_WEB_ORIGIN`. Both
 services bind to loopback; foreign Host/Origin headers are rejected. This remains
-an explicitly local application, without production authentication.
+the local development configuration. Hosted mode has a separate signed-session
+configuration described in [CONFIGURE.md](CONFIGURE.md).
 
 ## Complete a case
 
@@ -89,6 +96,7 @@ duplicate checks, revisions and leases remain unchanged.
 # From the repository root; disposable PostgreSQL test schemas only
 . ./scripts/local-env.ps1
 $env:AVOIRLY_TEST_DATABASE_URL = $env:DATABASE_URL
+$env:AVOIRLY_PG_BIN = Join-Path $PWD '.local/pgsql/bin'
 ./backend/.venv/Scripts/python.exe -m pytest backend/tests -q
 cd web
 npm ci
@@ -117,5 +125,6 @@ state. Invalid inputs are rejected and navigation unregisters the tool.
 Native WebMCP execution was not verified: no supported browser context was
 available. Ordinary browser operation does not depend on this optional feature.
 
-Authentication, managed hosting, backup/restore verification, monitoring and
-private pilot readiness belong to Phase 4. Nothing here publishes the application.
+Phase 4's hosted authentication and operations code is implemented. Real provider
+configuration, deployment and hosted acceptance remain pending. Nothing in the
+local startup commands publishes the application.

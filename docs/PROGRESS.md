@@ -135,8 +135,45 @@ successful opt-in test. Browser results do not establish model extraction qualit
 The existing non-blocking Starlette test-client deprecation warning remains. The
 Docker-specific limitation from Phase 2 remains unchanged.
 
-## Next phase
+## Phase 4 implementation and pending hosted acceptance
 
-Phase 3's local browser gate passes. Stop before Phase 4. Authentication, hosted
-deployment, backup/restore verification, monitoring and private pilot readiness
-remain Phase 4; no application deployment or real supplier email sending occurred.
+Authorized after Phase 3; code and local verification completed on 28 September 2026.
+The user will configure provider accounts after the code handoff.
+
+- Supabase asymmetric JWT verification, explicit invited-user allowlist and owner
+  checks on every case operation. Hosted mode rejects developer identity fallback.
+- French sign-in/sign-out, server-only auth cookies and same-origin API forwarding;
+  origin/host checks, bounded requests and private responses.
+- Private Supabase Storage adapter with temporary-file cleanup. RLS and revoked
+  browser-role grants protect application tables from direct Data API access.
+- Transactional daily quotas surviving case deletion, idempotent analysis requests
+  and a three-attempt recovery cap per input revision.
+- Worker heartbeat, protected non-content metrics, reported token/cost estimates
+  and a scheduled monitor. Estimates are not a provider billing ledger or spend cap.
+- Consistent PostgreSQL/document snapshots, checksums, isolated restore verification,
+  AES-256-GCM encrypted scheduled backups and configurable archive retention.
+- Non-root container definitions, Render deployment template and GitHub Actions
+  checks. No paid service or deployment was created. Automatic deployment is off.
+- [Configuration checklist](CONFIGURE.md) and [operations runbook](OPERATIONS.md)
+  covering deployment, recovery, deletion, retention, backups and pilot gates.
+
+Verification with real local PostgreSQL 17, Python 3.14 and Node 24:
+
+- **174 Python tests passed; 1 live extraction test skipped.** Tests include real
+  signed JWTs, two-owner isolation, concurrent quotas, retry caps, private storage
+  adapter behavior and successful database/source/draft restoration.
+- Backup tests authenticate ciphertext, reject tampering/wrong keys/overwrite,
+  decrypt a scheduled archive and verify retention never runs after failed upload.
+- **5 Chromium browser tests passed** through the new server-side API gateway,
+  real API/worker and PostgreSQL, with synthetic extraction fixtures.
+- Production Next.js build, TypeScript and Python lint passed.
+
+Still pending: Docker image verification (the local engine is unavailable), remote
+CI results, real Supabase/Render configuration and deployment, actual hosted cookie
+sign-in and two-account browser checks, live model extraction, provider alerts,
+scheduled encrypted restore and the approximately 20-pair labeled evaluation set.
+Mocked provider calls and local signatures are not hosted acceptance evidence.
+
+Phase 4's implementation is ready for configuration. Its **hosted pilot acceptance
+is not complete** until the checklist passes. Phase 5 and email sending remain out
+of scope.

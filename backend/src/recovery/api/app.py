@@ -2,9 +2,11 @@
 
 import ipaddress
 import logging
+import os
 from contextlib import asynccontextmanager
 from decimal import Decimal
 from typing import Annotated, Literal
+from urllib.parse import urlparse
 from uuid import UUID, uuid4
 
 from fastapi import Depends, FastAPI, File, Form, Header, Query, Request, UploadFile
@@ -12,12 +14,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select, text
 from starlette.exceptions import HTTPException
+from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from ..config import Settings
+from ..auth import TokenVerifier
+from ..config import SCHEMA_VERSION, Settings
 from ..db.models import Case, CaseEvent, Document
 from ..db.session import create_sessions
 from ..extraction import MAX_BYTES, ProcessingError
+from ..operations import metrics
+from ..quotas import consume
 from ..service import (
     attach_document,
     case_detail,
@@ -28,9 +34,10 @@ from ..service import (
     edit_draft,
     enqueue,
     owned_case,
+    owner_lock,
     save_review,
 )
-from ..storage import PrivateStorage
+from ..storage import create_storage
 from .errors import DomainError
 from .schemas import AnalyzeRequest, CloseRequest, DeleteRequest, EditDraftRequest, ReviewRequest
 
@@ -38,15 +45,16 @@ logger = logging.getLogger(__name__)
 
 
 def get_owner(request: Request):
-    # This dependency is replaced by verified managed authentication in Phase 4.
-    # Headers, bodies and query parameters cannot select a developer identity.
+    if request.app.state.settings.hosted:
+        return request.app.state.verifier.owner(request.headers.get("authorization"))
     return request.app.state.settings.local_owner
 
 
 class LocalBoundary:
-    def __init__(self, app, web_origin="http://127.0.0.1:3000"):
+    def __init__(self, app, web_origin="http://127.0.0.1:3000", hosted=False):
         self.app = app
         self.web_origin = web_origin
+        self.hosted = hosted
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -64,6 +72,8 @@ class LocalBoundary:
             f"http://{h}:{p}" for h in ("localhost", "127.0.0.1", "[::1]") for p in (8000, 3000)
         }
         local_origins.add(self.web_origin)
+        if self.hosted:
+            local_origins = {self.web_origin}
 
         async def error(code, message, status):
             return await JSONResponse(
@@ -71,7 +81,7 @@ class LocalBoundary:
                 status_code=status,
             )(scope, receive, send)
 
-        if not allowed:
+        if not allowed and not self.hosted:
             return await error(
                 "LOCAL_ONLY", "This development API accepts loopback clients only.", 403
             )
@@ -122,20 +132,21 @@ class LocalBoundary:
                 await error("INTERNAL_ERROR", "Request failed; retry with the request ID.", 500)
 
 
-def create_app(settings=None, sessions=None):
+def create_app(settings=None, sessions=None, *, storage=None, verifier=None):
     settings = settings or Settings.from_env()
     settings.validate()
     engine = None
     if sessions is None:
         engine, sessions = create_sessions(settings.database_url)
-    storage = PrivateStorage(settings.storage_root)
+    storage = storage or create_storage(settings)
 
     @asynccontextmanager
     async def lifespan(app):
         # Fail early if an explicit migration was not applied; no create_all on startup.
         with sessions() as session:
-            if session.scalar(text("SELECT version_num FROM alembic_version")) != "0001_phase2":
+            if session.scalar(text("SELECT version_num FROM alembic_version")) != SCHEMA_VERSION:
                 raise RuntimeError("Run Alembic upgrade head before starting the API.")
+        storage.check_private()
         yield
         if engine:
             engine.dispose()
@@ -143,12 +154,28 @@ def create_app(settings=None, sessions=None):
     app = FastAPI(
         title="Avoirly",
         description="Spot invoice discrepancies. Simplify supplier claims.",
-        version="0.2.0",
+        version="0.4.0",
+        docs_url=None if settings.hosted else "/docs",
+        redoc_url=None if settings.hosted else "/redoc",
+        openapi_url=None if settings.hosted else "/openapi.json",
         lifespan=lifespan,
     )
     app.state.settings, app.state.sessions, app.state.storage = settings, sessions, storage
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]"])
-    app.add_middleware(LocalBoundary, web_origin=settings.web_origin)
+    app.state.verifier = verifier or (TokenVerifier(settings) if settings.hosted else None)
+    hosts = (
+        [urlparse(settings.api_origin).hostname]
+        if settings.hosted
+        else ["localhost", "127.0.0.1", "[::1]"]
+    )
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=hosts)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[settings.web_origin],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
+        allow_credentials=False,
+    )
+    app.add_middleware(LocalBoundary, web_origin=settings.web_origin, hosted=settings.hosted)
 
     @app.exception_handler(DomainError)
     async def domain_error(request, exc):
@@ -217,11 +244,24 @@ def create_app(settings=None, sessions=None):
     def health():
         with sessions() as session:
             session.execute(text("SELECT 1"))
-        return {"status": "ok", "mode": "local", "product": "Avoirly"}
+        return {"status": "ok", "mode": settings.mode, "product": "Avoirly"}
+
+    @app.get("/ops/metrics")
+    def operations(request: Request):
+        import secrets
+
+        supplied = request.headers.get("authorization", "")
+        if not settings.metrics_token or not secrets.compare_digest(
+            supplied.encode(), ("Bearer " + settings.metrics_token).encode()
+        ):
+            raise DomainError("UNAUTHENTICATED", "Operator authentication required.", 401)
+        return metrics(sessions)
 
     @app.post(prefix + "/cases", status_code=201)
     def create_case(owner: owner_dep):
         with sessions.begin() as session:
+            owner_lock(session, owner)
+            consume(session, owner, "cases", settings.daily_cases)
             case = Case(id=uuid4(), owner_id=owner)
             session.add(case)
             session.flush()
@@ -338,6 +378,8 @@ def create_app(settings=None, sessions=None):
                 **checked.metadata(),
             )
             with sessions.begin() as session:
+                owner_lock(session, owner)
+                consume(session, owner, "uploads", settings.daily_uploads)
                 doc, case, keep = attach_document(session, owner, case_id, expected_version, fields)
                 result = {"document_id": str(doc.id), **case_summary(case)}
             return result
@@ -367,14 +409,14 @@ def create_app(settings=None, sessions=None):
             if not doc:
                 raise DomainError("NOT_FOUND", "Document not found.", 404)
             try:
-                data = storage.path(doc.storage_key).read_bytes()
+                data = storage.read(doc.storage_key)
             except FileNotFoundError as exc:
                 raise DomainError("NOT_FOUND", "Document not found.", 404) from exc
             return Response(
                 data,
                 media_type=doc.mime_type,
                 headers={
-                    "Content-Disposition": f'inline; filename="document{storage.path(doc.storage_key).suffix}"',
+                    "Content-Disposition": f'inline; filename="document.{doc.storage_key.rsplit(".", 1)[-1]}"',
                     "Content-Security-Policy": "sandbox",
                 },
             )
@@ -387,7 +429,9 @@ def create_app(settings=None, sessions=None):
         idempotency_key: Annotated[str, Header(min_length=1, max_length=128)],
     ):
         with sessions.begin() as session:
-            return enqueue(session, owner, case_id, payload, idempotency_key, settings.model)
+            return enqueue(
+                session, owner, case_id, payload, idempotency_key, settings.model, settings=settings
+            )
 
     @app.post(prefix + "/cases/{case_id}/retry", status_code=202)
     def retry(
@@ -398,12 +442,21 @@ def create_app(settings=None, sessions=None):
     ):
         with sessions.begin() as session:
             return enqueue(
-                session, owner, case_id, payload, idempotency_key, settings.model, retry=True
+                session,
+                owner,
+                case_id,
+                payload,
+                idempotency_key,
+                settings.model,
+                retry=True,
+                settings=settings,
             )
 
     @app.put(prefix + "/cases/{case_id}/review")
     def review(case_id: UUID, payload: ReviewRequest, owner: owner_dep):
         with sessions.begin() as session:
+            owner_lock(session, owner)
+            consume(session, owner, "reviews", settings.daily_reviews)
             return case_summary(save_review(session, owner, case_id, payload))
 
     @app.patch(prefix + "/cases/{case_id}/draft")
@@ -436,8 +489,8 @@ def main():
     uvicorn.run(
         "recovery.api.app:create_app",
         factory=True,
-        host="127.0.0.1",
-        port=8000,
+        host="0.0.0.0" if Settings.from_env().hosted else "127.0.0.1",
+        port=int(os.environ.get("PORT", "8000")),
         proxy_headers=False,
         access_log=False,
     )

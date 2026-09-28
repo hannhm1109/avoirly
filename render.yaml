@@ -1,0 +1,136 @@
+# Configuration template only. Creating these services may incur hosting charges.
+# Deploy API/migration first, then worker and web. No automatic deployment on push.
+services:
+  - type: web
+    name: avoirly-api
+    runtime: docker
+    region: frankfurt
+    plan: 0.5c-512mb
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: "off"
+    preDeployCommand: alembic -c backend/alembic.ini upgrade head
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: AVOIRLY_MODE
+        value: hosted
+      - key: DATABASE_URL
+        sync: false
+      - key: AVOIRLY_WEB_ORIGIN
+        sync: false
+      - key: AVOIRLY_API_ORIGIN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: AVOIRLY_PILOT_OWNER_IDS
+        sync: false
+      - key: AVOIRLY_METRICS_TOKEN
+        generateValue: true
+      - key: OPENAI_MODEL
+        sync: false
+  - type: worker
+    name: avoirly-worker
+    runtime: docker
+    region: frankfurt
+    plan: 0.5c-512mb
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: python -m recovery.worker
+    autoDeployTrigger: "off"
+    envVars:
+      - key: AVOIRLY_MODE
+        value: hosted
+      - key: DATABASE_URL
+        fromService: {type: web, name: avoirly-api, envVarKey: DATABASE_URL}
+      - key: AVOIRLY_WEB_ORIGIN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_WEB_ORIGIN}
+      - key: AVOIRLY_API_ORIGIN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_API_ORIGIN}
+      - key: SUPABASE_URL
+        fromService: {type: web, name: avoirly-api, envVarKey: SUPABASE_URL}
+      - key: SUPABASE_SECRET_KEY
+        fromService: {type: web, name: avoirly-api, envVarKey: SUPABASE_SECRET_KEY}
+      - key: AVOIRLY_PILOT_OWNER_IDS
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_PILOT_OWNER_IDS}
+      - key: AVOIRLY_METRICS_TOKEN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_METRICS_TOKEN}
+      - key: OPENAI_MODEL
+        fromService: {type: web, name: avoirly-api, envVarKey: OPENAI_MODEL}
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: AVOIRLY_INPUT_USD_PER_MILLION
+        sync: false
+      - key: AVOIRLY_OUTPUT_USD_PER_MILLION
+        sync: false
+  - type: web
+    name: avoirly-web
+    runtime: docker
+    region: frankfurt
+    plan: 0.5c-512mb
+    dockerfilePath: ./web/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: "off"
+    healthCheckPath: /auth/session
+    envVars:
+      - key: AVOIRLY_MODE
+        value: hosted
+      - key: AVOIRLY_API_ORIGIN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_API_ORIGIN}
+      - key: AVOIRLY_WEB_ORIGIN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_WEB_ORIGIN}
+      - key: SUPABASE_URL
+        fromService: {type: web, name: avoirly-api, envVarKey: SUPABASE_URL}
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+  - type: cron
+    name: avoirly-backup
+    runtime: docker
+    region: frankfurt
+    plan: 0.5c-512mb
+    dockerfilePath: ./backend/Dockerfile.ops
+    dockerContext: .
+    dockerCommand: python -m recovery.backup_job
+    schedule: "0 2 * * *"
+    autoDeployTrigger: "off"
+    envVars:
+      - key: DATABASE_URL
+        fromService: {type: web, name: avoirly-api, envVarKey: DATABASE_URL}
+      - key: AVOIRLY_WEB_ORIGIN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_WEB_ORIGIN}
+      - key: AVOIRLY_API_ORIGIN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_API_ORIGIN}
+      - key: SUPABASE_URL
+        fromService: {type: web, name: avoirly-api, envVarKey: SUPABASE_URL}
+      - key: SUPABASE_SECRET_KEY
+        fromService: {type: web, name: avoirly-api, envVarKey: SUPABASE_SECRET_KEY}
+      - key: AVOIRLY_PILOT_OWNER_IDS
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_PILOT_OWNER_IDS}
+      - key: AVOIRLY_METRICS_TOKEN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_METRICS_TOKEN}
+      - key: AVOIRLY_BACKUP_BUCKET
+        value: avoirly-backups
+      - key: AVOIRLY_BACKUP_KEY
+        sync: false
+      - key: AVOIRLY_BACKUP_RETENTION_DAYS
+        value: "14"
+  - type: cron
+    name: avoirly-monitor
+    runtime: docker
+    region: frankfurt
+    plan: 0.5c-512mb
+    dockerfilePath: ./backend/Dockerfile.ops
+    dockerContext: .
+    dockerCommand: python scripts/check-monitor.py
+    schedule: "*/5 * * * *"
+    autoDeployTrigger: "off"
+    envVars:
+      - key: AVOIRLY_API_ORIGIN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_API_ORIGIN}
+      - key: AVOIRLY_METRICS_TOKEN
+        fromService: {type: web, name: avoirly-api, envVarKey: AVOIRLY_METRICS_TOKEN}
+      - key: AVOIRLY_ALERT_USD_24H
+        sync: false
+      - key: AVOIRLY_ALERT_FAILURES
+        value: "3"

@@ -1,11 +1,12 @@
 """Immutable snapshots, durable jobs, and owner-scoped case metadata."""
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -192,3 +193,29 @@ class DeletionTask(Identity, Base):
 
     __tablename__ = "deletion_tasks"
     storage_key: Mapped[str] = mapped_column(Text, unique=True)
+
+
+class UsageCounter(Base):
+    """Non-content daily limits survive case deletion and process restarts."""
+
+    __tablename__ = "usage_counters"
+    owner_id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16), primary_key=True)
+    used: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class WorkerHeartbeat(Base):
+    __tablename__ = "worker_heartbeats"
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    last_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ModelUsage(Identity, Base):
+    """Reported token usage only; no source text, case ID or supplier identity."""
+
+    __tablename__ = "model_usage"
+    model: Mapped[str] = mapped_column(Text)
+    input_tokens: Mapped[int] = mapped_column(Integer)
+    output_tokens: Mapped[int] = mapped_column(Integer)
+    estimated_usd: Mapped[Decimal | None] = mapped_column(Numeric(20, 8))

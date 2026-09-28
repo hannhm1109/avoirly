@@ -1,0 +1,65 @@
+name: Avoirly checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: avoirly
+          POSTGRES_PASSWORD: test-only-password
+          POSTGRES_DB: avoirly
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U avoirly"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      AVOIRLY_TEST_DATABASE_URL: postgresql+psycopg://avoirly:test-only-password@127.0.0.1:5432/avoirly
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.14'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: npm, cache-dependency-path: web/package-lock.json}
+      - run: pip install uv==0.12.19
+      - run: uv sync --project backend --locked
+      - name: PostgreSQL 17 tools for snapshot/restore verification
+        run: |
+          mkdir -p .local/pg-tools
+          for tool in pg_dump pg_restore; do
+            cat > ".local/pg-tools/$tool" <<'SCRIPT'
+          #!/usr/bin/env bash
+          exec docker run --rm --network host -v "$PWD:$PWD" -v /tmp:/tmp \
+            -e PGHOST -e PGPORT -e PGUSER -e PGPASSWORD -e PGDATABASE \
+            -e PGSSLMODE -e PGOPTIONS postgres:17 "$(basename "$0")" "$@"
+          SCRIPT
+            chmod +x ".local/pg-tools/$tool"
+          done
+          echo "AVOIRLY_PG_BIN=$PWD/.local/pg-tools" >> "$GITHUB_ENV"
+      - run: uv run --project backend ruff check backend/src backend/tests scripts
+      - run: uv run --project backend pytest backend/tests -q --tb=short
+      - run: npm ci
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npm run test:e2e
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: synthetic-browser-results
+          path: web/test-results
+          retention-days: 7
+  containers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f backend/Dockerfile -t avoirly-api:test .
+      - run: docker build -f web/Dockerfile -t avoirly-web:test .
+      - run: docker build -f backend/Dockerfile.ops -t avoirly-ops:test .
+      - run: docker run --rm avoirly-ops:test pg_dump --version

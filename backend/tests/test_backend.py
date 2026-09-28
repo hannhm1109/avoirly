@@ -432,7 +432,7 @@ def test_client_owner_header_ignored_and_hosted_startup_refused(env):
         client.get(f"/api/v1/cases/{case['id']}", headers={"X-Owner-ID": str(uuid4())}).status_code
         == 200
     )
-    with pytest.raises(RuntimeError, match="local mode only"):
+    with pytest.raises(RuntimeError, match="explicit local or hosted"):
         create_app(replace(settings, mode="production"))
     assert (
         client.post("/api/v1/cases", headers={"Origin": "https://attacker.example"}).status_code

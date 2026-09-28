@@ -10,10 +10,15 @@ is owed.
 
 ## Build status
 
-Build Phases 1–3 are implemented: the Python CLI and comparison engine, a local
-FastAPI backend with PostgreSQL history and durable processing, and a French
-Next.js interface for uploads, source review, corrections, results and editable
-drafts. No sending integration or hosted pilot is included.
+Build Phases 1–3 are implemented. Phase 4 adds hosted authentication, private
+document storage, quotas, encrypted backups, monitoring and deployment templates
+to the Python API, durable worker and French Next.js interface. Phase 4's code is
+locally verified; hosted pilot acceptance still requires account configuration,
+deployment and live checks. No email sending is implemented.
+
+Next: follow the [configuration checklist](docs/CONFIGURE.md), then the
+[operations runbook](docs/OPERATIONS.md). [Progress](docs/PROGRESS.md) separates
+completed verification from pending hosted gates.
 
 Start with the [web setup guide](docs/WEB.md) to use the application at
 **http://127.0.0.1:3000**, or run the offline CLI example below. The

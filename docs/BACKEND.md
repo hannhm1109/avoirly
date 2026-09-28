@@ -1,12 +1,14 @@
-# Avoirly Phase 2 backend
+# Avoirly backend
 
 The API and a separate polling worker share PostgreSQL. An API restart does not
 lose cases or queued work. The worker saves each successful extraction and the
 comparison before drafting, so retries can resume completed steps.
 
-This is an explicitly local development backend. The French web interface is
-Phase 3; managed authentication, hosted deployment, backup policy, monitoring, and
-pilot release are Phase 4. No email is sent.
+The backend supports explicit local development and Phase 4 hosted mode. Hosted
+mode requires signed Supabase sessions, an invited-user allowlist, TLS database
+access and private object storage. See [CONFIGURE.md](CONFIGURE.md) and
+[OPERATIONS.md](OPERATIONS.md) for setup and outstanding pilot gates. The examples
+below describe local mode. No email is sent.
 
 ## Start on this computer
 
@@ -180,28 +182,32 @@ outbox retains only random object keys until files are removed. The API attempts
 cleanup immediately; the worker retries it. If storage is unavailable, content
 access is still revoked immediately and physical cleanup is pending.
 
-The developer identity is a fixed server environment value. The public API cannot
+In local mode, the developer identity is a fixed server environment value. The API cannot
 select it by header, body, or query parameter. The bundled API runner binds only
 to loopback; requests from non-loopback clients and unapproved origins are refused.
-Omitting explicit local mode or selecting a hosted mode prevents startup. Do not
-put this local API behind a public proxy. Tests replace the identity dependency to
-prove owner isolation; this is not a production sign-in system.
+Omitting an explicit mode prevents startup. Do not put local mode behind a public
+proxy. Hosted mode instead requires the full managed configuration and verifies
+signed user JWTs; no developer identity override is accepted. Phase 4 tests use
+real signatures to verify account isolation, with provider key discovery mocked.
 
-There is no automated backup or retention service in Phase 2. Local files and
-PostgreSQL data persist until explicitly removed. Existing external backups or
-OneDrive copies are outside the deletion transaction; Phase 4 must define retention
-and test restore before accepting real pilot data.
+Local files and PostgreSQL data persist until explicitly removed. Phase 4 adds
+scheduled encrypted snapshots and isolated restore verification; see
+[OPERATIONS.md](OPERATIONS.md). External backups and OneDrive copies remain outside
+the deletion transaction. Confirm retention and hosted restore before real pilot data.
 
 ## Run the acceptance suite
 
 ```powershell
 . ./scripts/local-env.ps1
 $env:AVOIRLY_TEST_DATABASE_URL = $env:DATABASE_URL
+$env:AVOIRLY_PG_BIN = Join-Path $PWD '.local/pgsql/bin'
 ./backend/.venv/Scripts/python.exe -m pytest backend/tests -q
 ./backend/.venv/Scripts/ruff.exe check backend scripts
 ```
 
-Database tests create a random temporary schema, apply the real migration, and
-drop only that schema afterwards. Existing application cases are not touched.
+Database tests create random temporary schemas, apply the real migration, and
+drop those schemas afterwards. The restore test also creates and drops its own
+random empty database, requiring a test role with CREATEDB and PostgreSQL client
+tools matching the server major version. Existing application cases are not touched.
 Without `AVOIRLY_TEST_DATABASE_URL`, PostgreSQL tests explicitly skip. Live OpenAI
 tests still require the separate `AVOIRLY_LIVE=1` opt-in.

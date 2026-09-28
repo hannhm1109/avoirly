@@ -1,3 +1,35 @@
+.login-container {
+  max-width: 550px;
+  margin: 40px auto;
+}
+.login-container > p {
+  margin: 16px 0 25px;
+}
+.login-container form {
+  margin: 25px 0;
+}
+.privacy-content {
+  max-width: 850px;
+}
+.privacy-content > h1 {
+  margin-bottom: 30px;
+}
+.privacy-content h2 {
+  margin: 24px 0 12px;
+}
+.privacy-content p {
+  margin-bottom: 18px;
+}
+.privacy-link {
+  margin-left: 20px;
+  text-decoration: underline;
+}
+.account-email {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .back-link {
   display: inline-flex;
   align-items: center;

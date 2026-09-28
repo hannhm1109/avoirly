@@ -23,6 +23,7 @@ from .db.models import (
 )
 from .matching import match_lines
 from .models import PairConfirmation
+from .quotas import consume
 from .validation import revision_hash, validate_pair
 from .workflow import ALLOWED_TRANSITIONS, CaseStatus
 
@@ -288,7 +289,7 @@ def save_review(session, owner, case_id, request):
     return case
 
 
-def enqueue(session, owner, case_id, request, key, model, *, retry=False):
+def enqueue(session, owner, case_id, request, key, model, *, retry=False, settings=None):
     owner_lock(session, owner)
     case = owned_case(session, owner, case_id, lock=True)
     route = f"/cases/{case_id}/{'retry' if retry else 'analyze'}"
@@ -361,6 +362,9 @@ def enqueue(session, owner, case_id, request, key, model, *, retry=False):
             )
             or 0
         ) + 1
+        if attempt > (settings.max_attempts if settings else 3):
+            raise DomainError("RETRY_LIMIT", "Maximum attempts reached for this revision.", 429)
+        consume(session, owner, "analyses", settings.daily_analyses if settings else 40)
         job = Job(
             id=uuid4(),
             case_id=case.id,
