@@ -168,9 +168,15 @@ Verification with real local PostgreSQL 17, Python 3.14 and Node 24:
   real API/worker and PostgreSQL, with synthetic extraction fixtures.
 - Production Next.js build, TypeScript and Python lint passed.
 
-Still pending: Docker image verification (the local engine is unavailable), remote
-CI results, real Supabase/Render configuration and deployment, actual hosted cookie
-sign-in and two-account browser checks, live model extraction, provider alerts,
+GitHub Actions also passed on Linux for implementation commit `9e27483`:
+[verified run](https://github.com/hannhm1109/avoirly/actions/runs/36428310118).
+Both jobs succeeded: Python/PostgreSQL and browser tests, production web build,
+all three Docker image builds, and PostgreSQL-tool execution in the operations
+image. The local Docker engine remains unavailable; remote container verification
+now passes. Container builds do not establish hosted runtime acceptance.
+
+Still pending: real Supabase/Render configuration and deployment, actual hosted
+cookie sign-in and two-account browser checks, live model extraction, provider alerts,
 scheduled encrypted restore and the approximately 20-pair labeled evaluation set.
 Mocked provider calls and local signatures are not hosted acceptance evidence.
 
