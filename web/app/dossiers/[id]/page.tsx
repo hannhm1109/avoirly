@@ -12,17 +12,19 @@ import {
 import { api, analyzeCase } from "@/lib/api";
 import { useCase } from "@/lib/use-case";
 import { money, quantity, dateLabel } from "@/lib/format";
-import type { Role } from "@/lib/types";
+import type { Role, CaseSummary } from "@/lib/types";
 import { Badge, ErrorNotice, Loading } from "@/components/ui";
 import { Issues } from "@/components/issues";
 import { DraftEditor } from "@/components/draft-editor";
 import { UploadSlot, uploadFile } from "@/components/upload";
+import { RecoveryTracker } from "@/components/recovery-tracker";
 
 export default function CasePage() {
   const { id } = useParams<{ id: string }>(),
     router = useRouter(),
     { data, error, load, active } = useCase(id);
   const [busy, setBusy] = useState(false),
+    [draftDirty, setDraftDirty] = useState(false),
     [actionError, setActionError] = useState<unknown>(null),
     [files, setFiles] = useState<Partial<Record<Role, File>>>({}),
     [replace, setReplace] = useState(false),
@@ -51,12 +53,16 @@ export default function CasePage() {
     data.extractions.INVOICE?.corrected || data.extractions.INVOICE?.raw;
   const complete = !!data.documents.PO && !!data.documents.INVOICE,
     closed = data.status === "CLOSED",
-    editable = !active && !closed;
+    editable = !active && !closed && !data.recovery.has_sent_record;
   const result = data.comparison,
     eligible = [
       "CLAIM_DRAFTED",
       "DISCREPANCY_FOUND",
       "NO_DISCREPANCY",
+      "CLAIM_SENT",
+      "AWAITING_RESPONSE",
+      "CREDIT_PROMISED",
+      "CREDIT_CONFIRMED",
     ].includes(data.status);
   return (
     <>
@@ -80,7 +86,14 @@ export default function CasePage() {
         <li className={complete ? "done" : ""}>1. Documents</li>
         <li className={eligible ? "done" : ""}>2. Vérification</li>
         <li className={eligible ? "done" : ""}>3. Résultat</li>
-        <li className={data.draft ? "done" : ""}>4. Brouillon</li>
+        <li
+          className={data.draft || data.recovery.has_sent_record ? "done" : ""}
+        >
+          4. Brouillon
+        </li>
+        <li className={data.recovery.has_sent_record ? "done" : ""}>
+          5. Suivi
+        </li>
       </ol>
       {error && <ErrorNotice error={error} onRetry={() => void load()} />}{" "}
       {actionError && <ErrorNotice error={actionError} />}
@@ -135,7 +148,7 @@ export default function CasePage() {
                 } as Record<string, string>
               )[data.close_reason || ""]
             }
-            . Cela ne signifie pas qu’un avoir a été reçu.
+            . La clôture ne modifie pas les montants du suivi ci-dessous.
           </p>
         </div>
       )}
@@ -270,7 +283,20 @@ export default function CasePage() {
           )}
         </>
       )}
-      {data.draft && <DraftEditor key={data.id} data={data} onSaved={load} />}
+      {data.draft && (
+        <DraftEditor
+          key={`draft:${data.id}`}
+          data={data}
+          onSaved={load}
+          onDirtyChange={setDraftDirty}
+        />
+      )}
+      <RecoveryTracker
+        key={`tracking:${data.id}`}
+        data={data}
+        onSaved={load}
+        draftDirty={draftDirty}
+      />
       <section className="panel documents-panel">
         <div className="panel-heading">
           <h2>Documents du dossier</h2>
@@ -327,7 +353,7 @@ export default function CasePage() {
               disabled={busy || !Object.keys(files).length}
               onClick={() =>
                 void action(async () => {
-                  let current = data;
+                  let current: CaseSummary = data;
                   for (const role of ["PO", "INVOICE"] as const) {
                     if (files[role]) {
                       const updated = await uploadFile(
@@ -335,7 +361,7 @@ export default function CasePage() {
                         role,
                         files[role]!,
                       );
-                      current = { ...current, ...updated };
+                      current = updated;
                       setFiles((v) => {
                         const n = { ...v };
                         delete n[role];
@@ -394,7 +420,7 @@ export default function CasePage() {
         </h2>
         <p>
           {confirmDelete
-            ? "Les documents, données extraites et brouillons seront supprimés du stockage actif. Des copies peuvent subsister dans les sauvegardes selon leur conservation. Cette action est définitive."
+            ? "Les documents, données extraites, brouillons, échanges et preuves d’avoirs seront supprimés du stockage actif. Des copies peuvent subsister dans les sauvegardes selon leur conservation. Cette action est définitive."
             : "La clôture empêche les modifications. Elle ne confirme aucun envoi ou remboursement."}
         </p>
         {!confirmDelete && (

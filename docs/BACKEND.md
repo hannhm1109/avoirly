@@ -10,6 +10,10 @@ access and private object storage. See [CONFIGURE.md](CONFIGURE.md) and
 [OPERATIONS.md](OPERATIONS.md) for setup and outstanding pilot gates. The examples
 below describe local mode. No email is sent.
 
+Phase 5 adds a manual ledger for externally sent claims, supplier notes, promises
+and evidence-backed partial credits. See [RECOVERY_TRACKING.md](RECOVERY_TRACKING.md)
+for its named endpoints, ownership/version guards and migration `0003_phase5`.
+
 ## Start on this computer
 
 The verified local setup uses standalone PostgreSQL on `127.0.0.1:55433`.

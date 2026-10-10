@@ -5,6 +5,10 @@ export type Status =
   | "NO_DISCREPANCY"
   | "DISCREPANCY_FOUND"
   | "CLAIM_DRAFTED"
+  | "CLAIM_SENT"
+  | "AWAITING_RESPONSE"
+  | "CREDIT_PROMISED"
+  | "CREDIT_CONFIRMED"
   | "FAILED"
   | "CLOSED";
 export type Role = "PO" | "INVOICE";
@@ -88,8 +92,10 @@ export interface CaseSummary {
   supplier_name?: string | null;
   invoice_number?: string | null;
   po_number?: string | null;
+  recovery?: RecoverySummary;
 }
 export interface CaseDetail extends CaseSummary {
+  recovery: RecoveryDetail;
   documents: Partial<
     Record<
       Role,
@@ -134,4 +140,46 @@ export interface CasePage {
   limit: number;
   offset: number;
   potential_credit_by_currency: Record<string, string>;
+  recovery_by_currency: Record<
+    "sent" | "promised" | "confirmed",
+    Record<string, string>
+  >;
+}
+
+export interface RecoverySummary {
+  currency: string | null;
+  sent_net: string;
+  promised_net: string;
+  confirmed_net: string;
+  remaining_claim_net: string;
+  has_sent_record: boolean;
+  fully_credited: boolean;
+}
+export interface RecoveryEntry {
+  id: string;
+  kind: "SENT" | "NOTE" | "PROMISE" | "CREDIT";
+  revision: number;
+  occurred_on: string;
+  amount_net: string | null;
+  currency: string;
+  reference: string;
+  note: string;
+  due_on: string | null;
+  evidence_id: string | null;
+  snapshot: { subject?: string; body?: string; draft_version?: number };
+  actor_id: string;
+  created_at: string;
+  voided_at: string | null;
+  void_reason: string | null;
+}
+export interface RecoveryDetail extends RecoverySummary {
+  entries: RecoveryEntry[];
+  evidence: {
+    id: string;
+    original_name: string;
+    mime_type: string;
+    page_count: number;
+    sha256: string;
+    created_at: string;
+  }[];
 }

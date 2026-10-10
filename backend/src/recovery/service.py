@@ -19,6 +19,7 @@ from .db.models import (
     Extraction,
     IdempotencyKey,
     Job,
+    RecoveryEvidence,
     utcnow,
 )
 from .matching import match_lines
@@ -170,6 +171,8 @@ def new_document_revision(
 
 
 def invalidate(session, case, actor, revision, metadata):
+    if case.status in ("CLAIM_SENT", "AWAITING_RESPONSE", "CREDIT_PROMISED", "CREDIT_CONFIRMED"):
+        raise DomainError("CLAIM_FROZEN", "Correct the sent record before changing claim inputs.")
     if case.status == "PROCESSING":
         raise DomainError(
             "CASE_PROCESSING", "Wait for processing or explicitly recover an expired job."
@@ -207,6 +210,8 @@ def invalidate(session, case, actor, revision, metadata):
 def attach_document(session, owner, case_id, expected, fields):
     owner_lock(session, owner)
     case = owned_case(session, owner, case_id, expected, lock=True)
+    if case.status in ("CLAIM_SENT", "AWAITING_RESPONSE", "CREDIT_PROMISED", "CREDIT_CONFIRMED"):
+        raise DomainError("CLAIM_FROZEN", "Sent claim documents are preserved for tracking.")
     # Same source in the same role is a harmless upload retry, but never in both roles.
     current = current_documents(session, case)
     same = current.get(fields["role"])
@@ -238,6 +243,8 @@ def attach_document(session, owner, case_id, expected, fields):
 def save_review(session, owner, case_id, request):
     owner_lock(session, owner)
     case = owned_case(session, owner, case_id, request.expected_version, lock=True)
+    if case.status in ("CLAIM_SENT", "AWAITING_RESPONSE", "CREDIT_PROMISED", "CREDIT_CONFIRMED"):
+        raise DomainError("CLAIM_FROZEN", "Sent claim inputs are preserved for tracking.")
     if not request.reason.strip():
         raise DomainError("INVALID_REASON", "A correction reason is required.", 422)
     docs = current_documents(session, case)
@@ -457,6 +464,11 @@ def delete_case(session, owner, case_id, expected):
     owner_lock(session, owner)
     case = owned_case(session, owner, case_id, expected, lock=True)
     keys = set(session.scalars(select(Document.storage_key).where(Document.case_id == case.id)))
+    keys.update(
+        session.scalars(
+            select(RecoveryEvidence.storage_key).where(RecoveryEvidence.case_id == case.id)
+        )
+    )
     for key in keys:
         session.add(DeletionTask(storage_key=key))
     # FK cascade removes content, jobs and leases atomically, preventing a later worker commit.
@@ -488,7 +500,10 @@ def case_summary(case):
     }
 
 
-def case_detail(session, case):
+def case_detail(session, case, *, recovery_history=True):
+    from .tracking import detail as recovery_detail
+    from .tracking import summary as recovery_summary
+
     data = case_summary(case)
     comparison = current_comparison(session, case)
     draft = current_draft(session, case)
@@ -537,4 +552,7 @@ def case_detail(session, case):
             select(Job).where(Job.case_id == case.id).order_by(Job.created_at.desc()).limit(20)
         )
     ]
+    data["recovery"] = (
+        recovery_detail(session, case) if recovery_history else recovery_summary(session, case)
+    )
     return data

@@ -91,7 +91,7 @@ Share only the project URL, final app URLs and configuration-completion status
 when asking for help with the next step.
 
 Default daily limits per user: 20 new cases, 40 analysis attempts, 60 successful
-upload actions and 120 review saves. UTC midnight resets the daily window. Case
+upload actions, 120 review saves and 120 manual tracking actions. UTC midnight resets the daily window. Case
 deletion does not reset counters. One active analysis per owner and at most three
 attempts per revision are enforced. Adjust identical `AVOIRLY_DAILY_*` values on
 the API if needed; keep `AVOIRLY_MAX_ATTEMPTS` consistent on API and worker.
@@ -145,7 +145,7 @@ and draft verification. Never test restore by overwriting production.
 
 Use synthetic data until these are all checked:
 
-- [ ] Container builds and deploys pass; schema is `0002_phase4`.
+- [ ] Container builds and deploys pass; current schema is `0003_phase5`.
 - [ ] Both invited users can sign in, refresh the page and sign out over HTTPS.
 - [ ] Session cookies are HttpOnly, Secure and SameSite=Lax; sessions are not cached.
 - [ ] User B cannot list/read/change/download user A's case, even using its URL.
@@ -162,4 +162,5 @@ Use synthetic data until these are all checked:
       with participants before real supplier documents are accepted.
 
 Only after these gates pass is Phase 4's **hosted pilot acceptance** complete.
-Phase 5 recovery tracking and actual email sending remain out of scope.
+Phase 5 adds manual recovery tracking; see [RECOVERY_TRACKING.md](RECOVERY_TRACKING.md).
+Actual email sending and Phase 6 subscriptions are separate later work.

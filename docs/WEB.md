@@ -10,6 +10,11 @@ HttpOnly/Secure cookies hold hosted sessions. No provider secret enters browser
 code. Local mode still works without a Supabase account. For hosted configuration
 and live acceptance checks, see [CONFIGURE.md](CONFIGURE.md).
 
+Phase 5 adds **Suivi de la demande** beneath a saved draft/result, with manual
+external-send declarations, supplier notes, promises, received partial-credit
+proofs and audited corrections. Dashboard totals keep requested, promised and
+confirmed net amounts separate by currency. See [RECOVERY_TRACKING.md](RECOVERY_TRACKING.md).
+
 ## Start locally
 
 First complete [backend setup](BACKEND.md), including the database migration.

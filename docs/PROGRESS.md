@@ -181,5 +181,46 @@ scheduled encrypted restore and the approximately 20-pair labeled evaluation set
 Mocked provider calls and local signatures are not hosted acceptance evidence.
 
 Phase 4's implementation is ready for configuration. Its **hosted pilot acceptance
-is not complete** until the checklist passes. Phase 5 and email sending remain out
-of scope.
+is not complete** until the checklist passes. Phase 5 was subsequently authorized
+and is described below; email sending remains out of scope.
+
+## Phase 5 — manual recovery tracking
+
+Authorized 9 October 2026; implemented and locally verified 10 October 2026.
+The migration proposal and usage/API details are in
+[RECOVERY_TRACKING.md](RECOVERY_TRACKING.md).
+
+- Migration `0003_phase5` preserves existing cases and expands the guarded status
+  enum. New manual ledger and private proof tables use default-deny RLS and revoked
+  browser-role grants. There is no arbitrary status or financial-total setter.
+- French interface records externally sent saved drafts, supplier responses,
+  promised amounts and evidence-backed partial credits. Sent records retain the
+  exact saved draft/version and comparison; sources freeze during active tracking.
+- Requested, promised and confirmed amounts remain separate Decimal strings.
+  Confirmation requires a proof, date, reference, currency and explicit human
+  receipt/verification. Full-credit coverage is separate from partial-credit status.
+- Case/version/owner guards, case-lifetime request idempotency, daily quotas,
+  exact-reference/evidence duplicate guards and cumulative sent-claim caps.
+- Corrections retain original amounts, proofs, actor/time and reason; totals and
+  status are recalculated from active entries. Closing preserves history; deletion
+  removes the ledger and queues all proof objects for physical cleanup.
+- Backups now include credit evidence and sent snapshots. The restore verifier
+  also accepts genuine Phase 4 archives lacking the new tables. Local application
+  data was backed up with the previous snapshot creator before migration.
+- Dashboard totals are page-scoped and grouped by currency. Summary reads avoid
+  loading private ledger notes and sent-text snapshots. Synthetic credit fixtures
+  and their generator are bundled for reproducible checks.
+
+Verification: **198 Python tests passed; one opt-in live extraction test skipped**.
+Tests use real PostgreSQL, signed JWTs for both owners, concurrent requests,
+legacy-schema upgrade/archive verification and real credit-proof/ledger restore.
+**Six Chromium browser tests passed** against the real API and worker. The new flow
+covers saved-draft send declaration, a 100.00 MAD promise, 75.25 + 124.75 MAD partial
+credits, reload, audited correction, currency totals and deletion. Desktop/mobile
+captures were inspected, and the mobile page has no horizontal overflow.
+Production Next.js build, TypeScript and Python lint passed. The known non-blocking
+Starlette test-client deprecation warning remains.
+
+No hosted configuration, pilot invitation, supplier message, payment provider or
+subscription was created. Phase 4 hosted/live acceptance remains pending. Phase 6
+requires observed usage, pricing/provider choices and separate authorization.

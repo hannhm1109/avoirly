@@ -79,7 +79,9 @@ def create_backup(settings, destination, *, storage=None):
                     raise RuntimeError("Unsupported database schema name.")
                 snapshot = conn.scalar(text("SELECT pg_export_snapshot()"))
                 rows = conn.execute(
-                    text("SELECT DISTINCT storage_key, sha256, size_bytes FROM documents")
+                    text(
+                        "SELECT storage_key, sha256, size_bytes FROM documents UNION SELECT storage_key, sha256, size_bytes FROM recovery_evidence"
+                    )
                 ).all()
                 manifest = {"format": 1, "schema": schema, "objects": [], "counts": {}}
                 for key, sha, size in rows:
@@ -99,6 +101,8 @@ def create_backup(settings, destination, *, storage=None):
                     "drafts",
                     "jobs",
                     "usage_counters",
+                    "recovery_entries",
+                    "recovery_evidence",
                 ):
                     manifest["counts"][table] = conn.scalar(text(f'SELECT count(*) FROM "{table}"'))
                 run_pg(
@@ -171,14 +175,18 @@ def verify_restore(archive, target_url, target_storage):
                     "drafts",
                     "jobs",
                     "usage_counters",
+                    "recovery_entries",
+                    "recovery_evidence",
                 ):
                     raise ValueError("Unsupported table in manifest")
                 actual = conn.scalar(text(f'SELECT count(*) FROM "{schema}"."{table}"'))
                 if actual != expected:
                     raise ValueError("Restored database count mismatch")
-            rows = conn.execute(
-                text(f'SELECT DISTINCT storage_key, sha256 FROM "{schema}".documents')
-            ).all()
+            sources = f'SELECT storage_key, sha256 FROM "{schema}".documents'
+            # Phase 4 archives have no recovery tables and remain verifiable.
+            if "recovery_evidence" in manifest["counts"]:
+                sources += f' UNION SELECT storage_key, sha256 FROM "{schema}".recovery_evidence'
+            rows = conn.execute(text(sources)).all()
             for key, sha in rows:
                 if digest((target / check_key(key)).read_bytes()) != sha:
                     raise ValueError("Restored source checksum mismatch")

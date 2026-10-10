@@ -76,11 +76,13 @@ keep it private and encrypt it before external storage. The scheduled job does t
 automatically. A missing/deleted source causes backup failure rather than a partial
 success. Retry after concurrent deletion settles.
 
-The snapshot covers application tables and referenced document objects. It does
+The snapshot covers application tables and referenced document objects, including
+manual recovery records, sent-draft snapshots and credit evidence. It does
 not back up Supabase Auth accounts, provider configuration, signing keys or secrets.
 Maintain those separately. A source upload interrupted before its database commit
 can leave an unreferenced storage object; periodically reconcile old bucket objects
-against `documents.storage_key` and `deletion_tasks.storage_key` while uploads are
+against `documents.storage_key`, `recovery_evidence.storage_key` and
+`deletion_tasks.storage_key` while uploads are
 paused. Review candidates before removal; no automatic orphan purge is implemented.
 
 ## Verify an encrypted restore
@@ -124,3 +126,18 @@ have their own retention; document those separately. Source files and extraction
 are sent to the configured model provider; confirm the provider's data controls.
 Update the displayed privacy information with actual operator contact and agreed
 retention before the real-data pilot. No legal-compliance certification is claimed.
+
+## Phase 5 migration
+
+Current schema: `0003_phase5`. Stop writes and run a complete snapshot using the
+previously deployed Phase 4 code before upgrading. The new migration preserves
+existing case statuses and content, expands allowed statuses and creates two
+default-deny RLS tables. Deploy API, worker, web and backup job from the same release.
+Never run the new snapshot creator against an unmigrated Phase 4 database.
+
+The current restore verifier also accepts Phase 4 snapshots that have no recovery
+tables. After checking a historical restore in isolation, explicitly upgrade its
+schema before using Phase 5 code. Phase 5 downgrade refuses to discard evidence.
+Financial tracking idempotency keys are retained for the case's lifetime; do not
+remove them in a general expired-key cleanup. Case deletion removes them together
+with the manual ledger and queues all credit evidence for physical removal.

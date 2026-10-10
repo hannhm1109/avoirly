@@ -594,6 +594,7 @@ export default function ReviewPage() {
   if (
     active ||
     data.status === "CLOSED" ||
+    data.recovery.has_sent_record ||
     !data.documents.PO ||
     !data.documents.INVOICE
   )
@@ -602,7 +603,8 @@ export default function ReviewPage() {
         <h1>Vérification indisponible</h1>
         <p>
           Les deux documents doivent être importés et le dossier doit être
-          ouvert, sans analyse en cours.
+          ouvert, sans analyse en cours. Les sources d’une demande envoyée
+          restent conservées avec le suivi.
         </p>
         <Link className="button secondary" href={`/dossiers/${id}`}>
           Retour au dossier

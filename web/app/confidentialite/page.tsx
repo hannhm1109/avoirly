@@ -8,14 +8,17 @@ export default function Privacy() {
         <p>
           Avoirly conserve vos bons de commande, factures, données extraites,
           corrections et brouillons afin de comparer vos documents et de
-          documenter les écarts. Aucun e-mail n’est envoyé automatiquement.
+          documenter les écarts. Le suivi manuel conserve aussi vos déclarations
+          d’envoi, notes fournisseur, montants promis, avoirs reçus et leurs
+          justificatifs. Aucun e-mail n’est envoyé automatiquement.
         </p>
         <h2>Extraction automatique</h2>
         <p>
           Quand vous lancez une extraction automatique, le contenu des documents
           est transmis à OpenAI. Vous pouvez aussi saisir et vérifier les
-          valeurs manuellement. N’importez que les documents que vous êtes
-          autorisé à traiter.
+          valeurs manuellement. Les justificatifs d’avoirs du suivi manuel ne
+          sont pas envoyés au modèle pour extraction. N’importez que les
+          documents que vous êtes autorisé à traiter.
         </p>
         <h2>Accès et conservation</h2>
         <p>

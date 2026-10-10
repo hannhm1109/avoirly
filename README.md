@@ -16,6 +16,10 @@ to the Python API, durable worker and French Next.js interface. Phase 4's code i
 locally verified; hosted pilot acceptance still requires account configuration,
 deployment and live checks. No email sending is implemented.
 
+Phase 5 adds manual sent-claim records, supplier notes, promised credits and
+evidence-backed partial credits with separate net totals and audited corrections.
+See [the recovery tracking guide](docs/RECOVERY_TRACKING.md).
+
 Next: follow the [configuration checklist](docs/CONFIGURE.md), then the
 [operations runbook](docs/OPERATIONS.md). [Progress](docs/PROGRESS.md) separates
 completed verification from pending hosted gates.

@@ -7,6 +7,10 @@ export const states: Record<Status, { label: string; tone: string }> = {
   NO_DISCREPANCY: { label: "Aucun écart", tone: "green" },
   DISCREPANCY_FOUND: { label: "Écart détecté", tone: "green" },
   CLAIM_DRAFTED: { label: "Brouillon prêt", tone: "green" },
+  CLAIM_SENT: { label: "Envoi déclaré", tone: "blue" },
+  AWAITING_RESPONSE: { label: "Réponse attendue", tone: "blue" },
+  CREDIT_PROMISED: { label: "Avoir promis", tone: "amber" },
+  CREDIT_CONFIRMED: { label: "Avoir reçu et vérifié", tone: "green" },
   FAILED: { label: "Analyse interrompue", tone: "red" },
   CLOSED: { label: "Clôturé", tone: "neutral" },
 };

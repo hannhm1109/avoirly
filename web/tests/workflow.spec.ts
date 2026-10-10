@@ -221,3 +221,149 @@ test("invalid uploads and foreign origins are rejected", async ({
     ).status(),
   ).toBe(403);
 });
+
+test("manual sent claim, promise, evidence and partial credits survive reload and correction", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(150000);
+  const id = await importPair(page);
+  await resolvePair(page);
+  const tracker = page.getByRole("region", { name: "Suivi de la demande" });
+  await page
+    .getByLabel("Objet", { exact: true })
+    .fill("Demande enregistrée pour le suivi");
+  await expect(
+    tracker.getByRole("button", { name: "Enregistrer l’envoi externe" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(
+    tracker.getByRole("button", { name: "Enregistrer l’envoi externe" }),
+  ).toBeEnabled();
+  await tracker
+    .getByLabel("Destinataire", { exact: true })
+    .fill("supplier@example.test");
+  await tracker
+    .getByLabel("J’ai envoyé ce brouillon enregistré en dehors d’Avoirly.")
+    .check();
+  await tracker
+    .getByRole("button", { name: "Enregistrer l’envoi externe" })
+    .click();
+  await expect(page.locator(".page-heading .badge")).toHaveText(
+    "Envoi déclaré",
+  );
+  await expect(page.locator(".draft-panel")).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Vérifier les données" }),
+  ).toHaveCount(0);
+  await tracker
+    .getByRole("button", { name: "Marquer en attente de réponse" })
+    .click();
+  await expect(page.locator(".page-heading .badge")).toHaveText(
+    "Réponse attendue",
+  );
+  await tracker.getByLabel("Type de suivi").selectOption("promise");
+  await tracker.getByLabel("Montant HT (MAD)", { exact: true }).fill("100.00");
+  await tracker.getByLabel("Référence de la promesse").fill("P-1");
+  await tracker
+    .getByLabel("Note du suivi")
+    .fill("Le fournisseur promet un avoir partiel de 100 MAD HT.");
+  await tracker.getByRole("button", { name: "Enregistrer le suivi" }).click();
+  await expect(page.locator(".page-heading .badge")).toHaveText("Avoir promis");
+  await expect(
+    tracker.locator(".recovery-total").filter({ hasText: "Confirmé HT" }),
+  ).toContainText("0,00 MAD");
+  for (const [number, amount] of [
+    [1, "75.25"],
+    [2, "124.75"],
+  ] as const) {
+    await tracker.getByLabel("Type de suivi").selectOption("credit");
+    await tracker.getByLabel("Montant HT (MAD)", { exact: true }).fill(amount);
+    await tracker.getByLabel("Référence de l’avoir reçu").fill(`CN-${number}`);
+    await tracker
+      .getByLabel("Note du suivi")
+      .fill(
+        `Avoir synthétique CN-${number} contrôlé : facture INV-8821 et montant HT.`,
+      );
+    await expect(
+      tracker.getByRole("button", { name: "Confirmer cet avoir reçu" }),
+    ).toBeDisabled();
+    await tracker
+      .getByLabel("Fichier justificatif")
+      .setInputFiles(sample(`credit-note-${number}.png`));
+    await tracker
+      .getByRole("button", { name: "Importer le justificatif" })
+      .click();
+    await expect(
+      tracker.getByLabel("Justificatif de cet avoir").locator("option:checked"),
+    ).toHaveText(`credit-note-${number}.png`);
+    await expect(
+      tracker.getByRole("link", { name: "Ouvrir le justificatif" }),
+    ).toBeVisible();
+    await tracker
+      .getByLabel(
+        "J’ai reçu cet avoir et vérifié sa preuve, sa devise et son montant hors taxes.",
+      )
+      .check();
+    await tracker
+      .getByRole("button", { name: "Confirmer cet avoir reçu" })
+      .click();
+    await expect(
+      tracker.locator(".recovery-total").filter({ hasText: "Confirmé HT" }),
+    ).toContainText(number === 1 ? "75,25 MAD" : "200,00 MAD");
+    if (number === 1) {
+      await expect(tracker).toContainText("124,75 MAD");
+      await page.setViewportSize({ width: 390, height: 844 });
+      await tracker.scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path: "test-results/tracking-mobile.png",
+        fullPage: true,
+      });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBeTruthy();
+      await page.setViewportSize({ width: 1440, height: 1050 });
+    }
+  }
+  await page.reload();
+  await expect(tracker).toContainText("La demande est intégralement couverte");
+  const current = await (await request.get(`/api/v1/cases/${id}`)).json();
+  expect(current.recovery.confirmed_net).toBe("200.00");
+  expect(current.recovery.promised_net).toBe("100.00");
+  expect(current.recovery.entries[0].snapshot.subject).toBe(
+    "Demande enregistrée pour le suivi",
+  );
+  await tracker
+    .locator(".tracking-history li")
+    .filter({ hasText: "CN-2" })
+    .getByRole("button", { name: "Corriger cette entrée" })
+    .click();
+  await tracker
+    .getByLabel("Motif de la correction")
+    .fill("Le deuxième avoir doit être revérifié.");
+  await tracker
+    .getByRole("button", { name: "Confirmer l’annulation de l’entrée" })
+    .click();
+  await expect(
+    tracker.locator(".recovery-total").filter({ hasText: "Confirmé HT" }),
+  ).toContainText("75,25 MAD");
+  await expect(tracker.locator(".voided-entry")).toContainText(
+    "Le deuxième avoir doit être revérifié.",
+  );
+  await page.screenshot({
+    path: "test-results/tracking-desktop.png",
+    fullPage: true,
+  });
+  await page.goto("/");
+  await expect(
+    page.getByRole("region", { name: "Totaux du suivi" }),
+  ).toContainText("75,25 MAD");
+  await page.goto(`/dossiers/${id}`);
+  await page
+    .getByRole("button", { name: "Supprimer le dossier", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Supprimer définitivement" }).click();
+  await expect(page).toHaveURL("http://127.0.0.1:3001/");
+});

@@ -15,6 +15,10 @@ class CaseStatus(StrEnum):
     NO_DISCREPANCY = "NO_DISCREPANCY"
     DISCREPANCY_FOUND = "DISCREPANCY_FOUND"
     CLAIM_DRAFTED = "CLAIM_DRAFTED"
+    CLAIM_SENT = "CLAIM_SENT"
+    AWAITING_RESPONSE = "AWAITING_RESPONSE"
+    CREDIT_PROMISED = "CREDIT_PROMISED"
+    CREDIT_CONFIRMED = "CREDIT_CONFIRMED"
     FAILED = "FAILED"
     CLOSED = "CLOSED"
 
@@ -35,7 +39,38 @@ ALLOWED_TRANSITIONS = {
     },
     CaseStatus.NEEDS_REVIEW: {"revise": CaseStatus.PENDING, "close": CaseStatus.CLOSED},
     CaseStatus.NO_DISCREPANCY: {"revise": CaseStatus.PENDING, "close": CaseStatus.CLOSED},
-    CaseStatus.CLAIM_DRAFTED: {"revise": CaseStatus.PENDING, "close": CaseStatus.CLOSED},
+    CaseStatus.CLAIM_DRAFTED: {
+        "revise": CaseStatus.PENDING,
+        "close": CaseStatus.CLOSED,
+        "claim_recorded_sent": CaseStatus.CLAIM_SENT,
+    },
+    CaseStatus.CLAIM_SENT: {
+        "await_response": CaseStatus.AWAITING_RESPONSE,
+        "credit_promised": CaseStatus.CREDIT_PROMISED,
+        "credit_confirmed": CaseStatus.CREDIT_CONFIRMED,
+        "tracking_corrected": CaseStatus.CLAIM_DRAFTED,
+        "sent_record_voided": CaseStatus.CLAIM_DRAFTED,
+        "close": CaseStatus.CLOSED,
+    },
+    CaseStatus.AWAITING_RESPONSE: {
+        "credit_promised": CaseStatus.CREDIT_PROMISED,
+        "credit_confirmed": CaseStatus.CREDIT_CONFIRMED,
+        "tracking_corrected": CaseStatus.CLAIM_SENT,
+        "sent_record_voided": CaseStatus.CLAIM_DRAFTED,
+        "close": CaseStatus.CLOSED,
+    },
+    CaseStatus.CREDIT_PROMISED: {
+        "credit_confirmed": CaseStatus.CREDIT_CONFIRMED,
+        "tracking_corrected": CaseStatus.CLAIM_SENT,
+        "sent_record_voided": CaseStatus.CLAIM_DRAFTED,
+        "close": CaseStatus.CLOSED,
+    },
+    CaseStatus.CREDIT_CONFIRMED: {
+        "tracking_promised": CaseStatus.CREDIT_PROMISED,
+        "tracking_corrected": CaseStatus.CLAIM_SENT,
+        "sent_record_voided": CaseStatus.CLAIM_DRAFTED,
+        "close": CaseStatus.CLOSED,
+    },
     CaseStatus.FAILED: {"retry": CaseStatus.PENDING, "close": CaseStatus.CLOSED},
     CaseStatus.CLOSED: {},
 }

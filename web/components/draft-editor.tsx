@@ -7,9 +7,11 @@ import { ErrorNotice } from "./ui";
 export function DraftEditor({
   data,
   onSaved,
+  onDirtyChange,
 }: {
   data: CaseDetail;
   onSaved: () => Promise<unknown>;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [subject, setSubject] = useState(data.draft!.subject),
     [body, setBody] = useState(data.draft!.body),
@@ -34,6 +36,7 @@ export function DraftEditor({
         setVersion(result.version);
         setSaved({ subject, body });
         await onSaved();
+        onDirtyChange?.(false);
       }
       const text = `Objet : ${subject}\n\n${body}\n`;
       if (action === "copy") await navigator.clipboard.writeText(text);
@@ -76,7 +79,12 @@ export function DraftEditor({
           <input
             value={subject}
             maxLength={500}
-            onChange={(e) => setSubject(e.target.value)}
+            onChange={(e) => {
+              setSubject(e.target.value);
+              onDirtyChange?.(
+                e.target.value !== saved.subject || body !== saved.body,
+              );
+            }}
           />
         </label>
         <label className="field">
@@ -86,7 +94,12 @@ export function DraftEditor({
             className="draft-body"
             value={body}
             maxLength={20000}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => {
+              setBody(e.target.value);
+              onDirtyChange?.(
+                subject !== saved.subject || e.target.value !== saved.body,
+              );
+            }}
           />
         </label>
         {!!error && <ErrorNotice error={error} />}

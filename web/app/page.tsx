@@ -107,6 +107,37 @@ export default function CasesPage() {
               <small>Écarts vérifiés sur cette page · à confirmer</small>
             </div>
           </div>
+          {data.items.some((c) => c.recovery?.has_sent_record) && (
+            <section
+              className="panel dashboard-tracking"
+              aria-label="Totaux du suivi"
+            >
+              <div className="panel-heading">
+                <div>
+                  <h2>Demandes et avoirs enregistrés</h2>
+                  <p>Sur cette page · hors taxes · suivi manuel</p>
+                </div>
+              </div>
+              <div className="panel-body recovery-metrics">
+                {(
+                  [
+                    ["sent", "Demandé"],
+                    ["promised", "Promis"],
+                    ["confirmed", "Reçu et vérifié"],
+                  ] as const
+                ).map(([kind, label]) => (
+                  <div className="recovery-total" key={kind}>
+                    <span>{label} HT</span>
+                    {Object.entries(data.recovery_by_currency[kind]).map(
+                      ([currency, value]) => (
+                        <strong key={currency}>{money(value, currency)}</strong>
+                      ),
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
           <section className="panel cases-panel">
             <div className="panel-heading">
               <div>
@@ -114,7 +145,7 @@ export default function CasesPage() {
                   Mes dossiers{" "}
                   <span className="count">{data.items.length}</span>
                 </h2>
-                <p>Du premier document au brouillon de demande.</p>
+                <p>Du premier document au suivi des avoirs.</p>
               </div>
               <span className="tiny-label">MIS À JOUR RÉCEMMENT</span>
             </div>
@@ -126,6 +157,7 @@ export default function CasesPage() {
                       <th>Fournisseur & facture</th>
                       <th>Statut</th>
                       <th>Avoir potentiel HT</th>
+                      <th>Avoir confirmé HT</th>
                       <th>Mis à jour</th>
                       <th>
                         <span className="sr-only">Ouvrir</span>
@@ -163,8 +195,20 @@ export default function CasesPage() {
                             "DISCREPANCY_FOUND",
                             "CLAIM_DRAFTED",
                             "NO_DISCREPANCY",
+                            "CLAIM_SENT",
+                            "AWAITING_RESPONSE",
+                            "CREDIT_PROMISED",
+                            "CREDIT_CONFIRMED",
                           ].includes(c.status)
                             ? money(c.potential_credit_net, c.currency)
+                            : "—"}
+                        </td>
+                        <td className="amount">
+                          {c.recovery?.has_sent_record
+                            ? money(
+                                c.recovery.confirmed_net,
+                                c.recovery.currency,
+                              )
                             : "—"}
                         </td>
                         <td className="muted">{dateLabel(c.updated_at)}</td>

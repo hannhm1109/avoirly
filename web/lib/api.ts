@@ -31,6 +31,22 @@ const messages: Record<string, string> = {
   CASE_PROCESSING:
     "L’analyse est en cours. Attendez sa fin avant de modifier les documents.",
   CASE_CLOSED: "Ce dossier est clôturé.",
+  CLAIM_FROZEN:
+    "Les documents d’une demande envoyée sont conservés. Corrigez d’abord l’envoi dans le suivi.",
+  CLAIM_NOT_SENT:
+    "Déclarez l’envoi externe avant d’ajouter une réponse ou un avoir.",
+  INVALID_TRACKING_DATE:
+    "La date doit se situer entre l’envoi et aujourd’hui. L’échéance suit la promesse.",
+  INVALID_TRACKING_AMOUNT:
+    "Saisissez un montant HT positif, dans la devise du dossier, inférieur ou égal à la demande.",
+  CREDIT_EXCEEDS_CLAIM:
+    "Le cumul dépasse le montant de la demande envoyée. Vérifiez les montants déjà enregistrés.",
+  DUPLICATE_CREDIT:
+    "Cette référence ou cette preuve a déjà été utilisée. Vérifiez l’historique avant de continuer.",
+  ACTIVE_CREDITS:
+    "Annulez d’abord les promesses et les avoirs actifs pour corriger l’envoi.",
+  ENTRY_VOIDED: "Cette entrée est déjà annulée.",
+  TRACKING_LIMIT: "La limite de suivi de ce dossier est atteinte.",
   UNSUPPORTED_MAPPING:
     "Ces lignes ne respectent pas les règles de rapprochement. Vérifiez les références et les unités.",
 };
@@ -105,6 +121,34 @@ export async function analyzeCase(
     method: "POST",
     headers: { "Idempotency-Key": requestKey },
     body: JSON.stringify({ expected_version: version, language }),
+  });
+  sessionStorage.removeItem(slot);
+  return result;
+}
+
+export async function trackingAction(
+  id: string,
+  action: string,
+  payload: object,
+) {
+  const body = JSON.stringify(payload);
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(body),
+  );
+  const signature = Array.from(new Uint8Array(digest), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+  const slot = `avoirly-tracking:${id}:${action}:${signature}`;
+  let key = sessionStorage.getItem(slot);
+  if (!key) {
+    key = crypto.randomUUID();
+    sessionStorage.setItem(slot, key);
+  }
+  const result = await api<CaseSummary>(`/cases/${id}/tracking/${action}`, {
+    method: "POST",
+    headers: { "Idempotency-Key": key },
+    body,
   });
   sessionStorage.removeItem(slot);
   return result;

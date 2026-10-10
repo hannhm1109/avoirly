@@ -19,7 +19,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from ..auth import TokenVerifier
 from ..config import SCHEMA_VERSION, Settings
-from ..db.models import Case, CaseEvent, Document
+from ..db.models import Case, CaseEvent, Document, RecoveryEvidence
 from ..db.session import create_sessions
 from ..extraction import MAX_BYTES, ProcessingError
 from ..operations import metrics
@@ -38,8 +38,17 @@ from ..service import (
     save_review,
 )
 from ..storage import create_storage
+from ..tracking import TRACKING_STATES, attach_evidence, run_action
 from .errors import DomainError
-from .schemas import AnalyzeRequest, CloseRequest, DeleteRequest, EditDraftRequest, ReviewRequest
+from .schemas import (
+    AnalyzeRequest,
+    CloseRequest,
+    DeleteRequest,
+    EditDraftRequest,
+    ReviewRequest,
+    VersionRequest,
+)
+from .tracking_schemas import CreditRequest, NoteRequest, PromiseRequest, SentRequest, VoidRequest
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +163,7 @@ def create_app(settings=None, sessions=None, *, storage=None, verifier=None):
     app = FastAPI(
         title="Avoirly",
         description="Spot invoice discrepancies. Simplify supplier claims.",
-        version="0.4.0",
+        version="0.5.0",
         docs_url=None if settings.hosted else "/docs",
         redoc_url=None if settings.hosted else "/redoc",
         openapi_url=None if settings.hosted else "/openapi.json",
@@ -291,9 +300,9 @@ def create_app(settings=None, sessions=None, *, storage=None, verifier=None):
                 .offset(offset)
                 .limit(limit)
             )
-            items, totals = [], {}
+            items, totals, tracked = [], {}, {"sent": {}, "promised": {}, "confirmed": {}}
             for case in cases:
-                detail = case_detail(session, case)
+                detail = case_detail(session, case, recovery_history=False)
                 item = case_summary(case)
                 values = {
                     role: ext["corrected"] or ext["raw"]
@@ -304,10 +313,22 @@ def create_app(settings=None, sessions=None, *, storage=None, verifier=None):
                     supplier_name=(invoice.get("supplier") or {}).get("name"),
                     invoice_number=invoice.get("document_number"),
                     po_number=po.get("document_number"),
+                    recovery=detail["recovery"],
                 )
                 items.append(item)
+                recovery = detail["recovery"]
+                if recovery["has_sent_record"]:
+                    from decimal import localcontext
+
+                    with localcontext() as context:
+                        context.prec = 48
+                        for kind, bucket in tracked.items():
+                            bucket[recovery["currency"]] = bucket.get(
+                                recovery["currency"], Decimal("0.00")
+                            ) + Decimal(recovery[kind + "_net"])
                 if (
-                    case.status in ("DISCREPANCY_FOUND", "CLAIM_DRAFTED", "NO_DISCREPANCY")
+                    case.status
+                    in ("DISCREPANCY_FOUND", "CLAIM_DRAFTED", "NO_DISCREPANCY", *TRACKING_STATES)
                     and case.currency
                     and case.potential_credit_net is not None
                 ):
@@ -319,6 +340,9 @@ def create_app(settings=None, sessions=None, *, storage=None, verifier=None):
                 "limit": limit,
                 "offset": offset,
                 "potential_credit_by_currency": {k: str(v) for k, v in totals.items()},
+                "recovery_by_currency": {
+                    kind: {k: str(v) for k, v in values.items()} for kind, values in tracked.items()
+                },
             }
 
     @app.get(prefix + "/cases/{case_id}")
@@ -468,6 +492,138 @@ def create_app(settings=None, sessions=None, *, storage=None, verifier=None):
     def close(case_id: UUID, payload: CloseRequest, owner: owner_dep):
         with sessions.begin() as session:
             return case_summary(close_case(session, owner, case_id, payload))
+
+    def tracking_action(owner, case_id, payload, key, action, entry_id=None):
+        with sessions.begin() as session:
+            return run_action(session, owner, case_id, payload, key, action, settings, entry_id)
+
+    @app.post(prefix + "/cases/{case_id}/tracking/sent", status_code=201)
+    def recorded_sent(
+        case_id: UUID,
+        payload: SentRequest,
+        owner: owner_dep,
+        idempotency_key: Annotated[str, Header(min_length=1, max_length=128)],
+    ):
+        return tracking_action(owner, case_id, payload, idempotency_key, "sent")
+
+    @app.post(prefix + "/cases/{case_id}/tracking/await")
+    def awaiting_response(
+        case_id: UUID,
+        payload: VersionRequest,
+        owner: owner_dep,
+        idempotency_key: Annotated[str, Header(min_length=1, max_length=128)],
+    ):
+        return tracking_action(owner, case_id, payload, idempotency_key, "await")
+
+    @app.post(prefix + "/cases/{case_id}/tracking/note", status_code=201)
+    def supplier_note(
+        case_id: UUID,
+        payload: NoteRequest,
+        owner: owner_dep,
+        idempotency_key: Annotated[str, Header(min_length=1, max_length=128)],
+    ):
+        return tracking_action(owner, case_id, payload, idempotency_key, "note")
+
+    @app.post(prefix + "/cases/{case_id}/tracking/promise", status_code=201)
+    def promise(
+        case_id: UUID,
+        payload: PromiseRequest,
+        owner: owner_dep,
+        idempotency_key: Annotated[str, Header(min_length=1, max_length=128)],
+    ):
+        return tracking_action(owner, case_id, payload, idempotency_key, "promise")
+
+    @app.post(prefix + "/cases/{case_id}/tracking/credit", status_code=201)
+    def confirm_credit(
+        case_id: UUID,
+        payload: CreditRequest,
+        owner: owner_dep,
+        idempotency_key: Annotated[str, Header(min_length=1, max_length=128)],
+    ):
+        return tracking_action(owner, case_id, payload, idempotency_key, "credit")
+
+    @app.post(prefix + "/cases/{case_id}/tracking/{entry_id}/void")
+    def correct_tracking(
+        case_id: UUID,
+        entry_id: UUID,
+        payload: VoidRequest,
+        owner: owner_dep,
+        idempotency_key: Annotated[str, Header(min_length=1, max_length=128)],
+    ):
+        return tracking_action(owner, case_id, payload, idempotency_key, "void", entry_id)
+
+    @app.post(prefix + "/cases/{case_id}/evidence", status_code=201)
+    def upload_evidence(
+        case_id: UUID,
+        owner: owner_dep,
+        expected_version: Annotated[int, Form(ge=1)],
+        file: Annotated[UploadFile, File()],
+    ):
+        with sessions() as session:
+            owned_case(session, owner, case_id, expected_version)
+        key, keep = None, False
+        try:
+            key, checked = storage.save_upload(file.file, file.filename)
+            fields = {
+                "storage_key": key,
+                "original_name": (file.filename or "evidence")
+                .replace("\\", "/")
+                .split("/")[-1][:255],
+                **checked.metadata(),
+            }
+            with sessions.begin() as session:
+                evidence, case, keep = attach_evidence(
+                    session, owner, case_id, expected_version, fields, settings
+                )
+                result = {"evidence_id": str(evidence.id), **case_summary(case)}
+            return result
+        except ProcessingError as exc:
+            status = (
+                413
+                if exc.code in ("FILE_SIZE", "PIXEL_LIMIT", "PAGE_LIMIT")
+                else (415 if exc.code == "WRONG_MIME" else 422)
+            )
+            raise DomainError(exc.code, str(exc), status) from exc
+        except Exception:
+            keep = False
+            raise
+        finally:
+            file.file.close()
+            if key and not keep:
+                try:
+                    storage.delete(key)
+                except OSError:
+                    from ..db.models import DeletionTask
+
+                    with sessions.begin() as session:
+                        session.add(DeletionTask(storage_key=key))
+
+    @app.get(prefix + "/evidence/{evidence_id}/content")
+    def evidence_content(evidence_id: UUID, owner: owner_dep):
+        with sessions() as session:
+            evidence = session.scalar(
+                select(RecoveryEvidence)
+                .join(Case)
+                .where(
+                    RecoveryEvidence.id == evidence_id,
+                    RecoveryEvidence.owner_id == owner,
+                    Case.owner_id == owner,
+                )
+            )
+            if not evidence:
+                raise DomainError("NOT_FOUND", "Credit evidence not found.", 404)
+            try:
+                data = storage.read(evidence.storage_key)
+            except FileNotFoundError as exc:
+                raise DomainError("NOT_FOUND", "Credit evidence not found.", 404) from exc
+            return Response(
+                data,
+                media_type=evidence.mime_type,
+                headers={
+                    "Content-Disposition": f'inline; filename="evidence.{evidence.storage_key.rsplit(".", 1)[-1]}"',
+                    "Content-Security-Policy": "sandbox",
+                },
+            )
 
     @app.delete(prefix + "/cases/{case_id}", status_code=202)
     def remove(case_id: UUID, payload: DeleteRequest, owner: owner_dep):

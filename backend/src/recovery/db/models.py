@@ -50,7 +50,7 @@ class Case(Identity, Base):
     __table_args__ = (
         Index("ix_cases_owner_created", "owner_id", "created_at"),
         CheckConstraint(
-            "status IN ('PENDING','PROCESSING','NEEDS_REVIEW','NO_DISCREPANCY','DISCREPANCY_FOUND','CLAIM_DRAFTED','FAILED','CLOSED')",
+            "status IN ('PENDING','PROCESSING','NEEDS_REVIEW','NO_DISCREPANCY','DISCREPANCY_FOUND','CLAIM_DRAFTED','CLAIM_SENT','AWAITING_RESPONSE','CREDIT_PROMISED','CREDIT_CONFIRMED','FAILED','CLOSED')",
             name="ck_case_status",
         ),
         CheckConstraint("version > 0 AND current_revision >= 0", name="ck_case_version"),
@@ -219,3 +219,73 @@ class ModelUsage(Identity, Base):
     input_tokens: Mapped[int] = mapped_column(Integer)
     output_tokens: Mapped[int] = mapped_column(Integer)
     estimated_usd: Mapped[Decimal | None] = mapped_column(Numeric(20, 8))
+
+
+class RecoveryEvidence(Identity, Base):
+    __tablename__ = "recovery_evidence"
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id", ondelete="CASCADE"), index=True)
+    owner_id: Mapped[UUID] = mapped_column(Uuid)
+    storage_key: Mapped[str] = mapped_column(Text, unique=True)
+    original_name: Mapped[str] = mapped_column(Text)
+    mime_type: Mapped[str] = mapped_column(String(64))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    page_count: Mapped[int] = mapped_column(Integer)
+    __table_args__ = (UniqueConstraint("owner_id", "sha256"),)
+
+
+class RecoveryEntry(Identity, Base):
+    """Manual ledger: amounts never overwrite history; corrections void an entry."""
+
+    __tablename__ = "recovery_entries"
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id", ondelete="CASCADE"), index=True)
+    actor_id: Mapped[UUID] = mapped_column(Uuid)
+    revision: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(String(8))
+    occurred_on: Mapped[date] = mapped_column(Date)
+    amount_net: Mapped[Decimal | None] = mapped_column(Numeric(38, 2))
+    currency: Mapped[str] = mapped_column(String(3))
+    reference: Mapped[str] = mapped_column(Text)
+    reference_key: Mapped[str] = mapped_column(Text)
+    note: Mapped[str] = mapped_column(Text)
+    due_on: Mapped[date | None] = mapped_column(Date)
+    evidence_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("recovery_evidence.id", ondelete="CASCADE")
+    )
+    snapshot_json: Mapped[dict] = mapped_column(JSONB, default=dict)
+    voided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    voided_by: Mapped[UUID | None] = mapped_column(Uuid)
+    void_reason: Mapped[str | None] = mapped_column(Text)
+    __table_args__ = (
+        CheckConstraint("kind IN ('SENT','NOTE','PROMISE','CREDIT')", name="ck_recovery_kind"),
+        CheckConstraint("currency IN ('MAD','EUR','USD','GBP')", name="ck_recovery_currency"),
+        CheckConstraint(
+            "(kind = 'NOTE' AND amount_net IS NULL) OR (kind <> 'NOTE' AND amount_net IS NOT NULL AND amount_net > 0)",
+            name="ck_recovery_amount",
+        ),
+        CheckConstraint("kind <> 'CREDIT' OR evidence_id IS NOT NULL", name="ck_credit_evidence"),
+        CheckConstraint(
+            "(voided_at IS NULL AND voided_by IS NULL AND void_reason IS NULL) OR "
+            "(voided_at IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL AND length(trim(void_reason)) > 0)",
+            name="ck_recovery_void",
+        ),
+        Index(
+            "uq_sent_case",
+            "case_id",
+            unique=True,
+            postgresql_where=text("kind = 'SENT' AND voided_at IS NULL"),
+        ),
+        Index(
+            "uq_credit_reference",
+            "case_id",
+            "reference_key",
+            unique=True,
+            postgresql_where=text("kind = 'CREDIT' AND voided_at IS NULL"),
+        ),
+        Index(
+            "uq_credit_evidence",
+            "evidence_id",
+            unique=True,
+            postgresql_where=text("kind = 'CREDIT' AND voided_at IS NULL"),
+        ),
+    )

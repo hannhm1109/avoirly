@@ -9,7 +9,7 @@ from uuid import UUID
 
 from sqlalchemy.engine import make_url
 
-SCHEMA_VERSION = "0002_phase4"
+SCHEMA_VERSION = "0003_phase5"
 
 
 def origin_url(value, *, https=False):
@@ -45,6 +45,7 @@ class Settings:
     daily_analyses: int = 40
     daily_uploads: int = 60
     daily_reviews: int = 120
+    daily_tracking: int = 120
     max_attempts: int = 3
     pilot_owner_ids: tuple[UUID, ...] = ()
     input_usd_per_million: str = ""
@@ -67,6 +68,7 @@ class Settings:
                 self.daily_analyses,
                 self.daily_uploads,
                 self.daily_reviews,
+                self.daily_tracking,
                 self.max_attempts,
             )
             < 1
@@ -120,6 +122,7 @@ class Settings:
             daily_analyses=int(os.environ.get("AVOIRLY_DAILY_ANALYSES", "40")),
             daily_uploads=int(os.environ.get("AVOIRLY_DAILY_UPLOADS", "60")),
             daily_reviews=int(os.environ.get("AVOIRLY_DAILY_REVIEWS", "120")),
+            daily_tracking=int(os.environ.get("AVOIRLY_DAILY_TRACKING", "120")),
             max_attempts=int(os.environ.get("AVOIRLY_MAX_ATTEMPTS", "3")),
             pilot_owner_ids=tuple(
                 UUID(v.strip())
