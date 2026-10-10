@@ -221,6 +221,13 @@ captures were inspected, and the mobile page has no horizontal overflow.
 Production Next.js build, TypeScript and Python lint passed. The known non-blocking
 Starlette test-client deprecation warning remains.
 
+GitHub Actions passed for implementation commit `564e9f5`:
+[verified run](https://github.com/hannhm1109/avoirly/actions/runs/38057908496).
+Both Linux jobs succeeded, covering Python/PostgreSQL tests, production web build,
+the six browser workflows, all three Docker image builds and PostgreSQL client-tool
+execution in the operations image. Subsequent documentation-only commits do not
+change the tested implementation.
+
 No hosted configuration, pilot invitation, supplier message, payment provider or
 subscription was created. Phase 4 hosted/live acceptance remains pending. Phase 6
 requires observed usage, pricing/provider choices and separate authorization.
