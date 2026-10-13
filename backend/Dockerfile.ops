@@ -4,11 +4,11 @@ FROM python:3.14-slim
 RUN apt-get update && apt-get install -y --no-install-recommends libpq5 liblz4-1 libzstd1 && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir uv==0.12.19
 WORKDIR /app
-COPY backend/ /app/backend/
+COPY --chown=10001:10001 backend/ /app/backend/
 RUN uv sync --project backend --locked --no-dev && useradd --create-home --uid 10001 avoirly
 COPY --from=pgtools /usr/lib/postgresql/17/bin/pg_dump /usr/local/bin/pg_dump
 COPY --from=pgtools /usr/lib/postgresql/17/bin/pg_restore /usr/local/bin/pg_restore
-COPY scripts/check-monitor.py /app/scripts/check-monitor.py
+COPY --chown=10001:10001 scripts/check-monitor.py /app/scripts/check-monitor.py
 ENV PATH="/app/backend/.venv/bin:$PATH" PYTHONUNBUFFERED=1 AVOIRLY_MODE=hosted
 USER avoirly
 CMD ["python", "-m", "recovery.backup_job"]

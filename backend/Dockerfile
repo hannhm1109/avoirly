@@ -7,7 +7,7 @@ RUN uv sync --project backend --locked --no-dev
 FROM python:3.14-slim
 RUN useradd --create-home --uid 10001 avoirly
 WORKDIR /app
-COPY --from=build /app/backend /app/backend
+COPY --from=build --chown=avoirly:avoirly /app/backend /app/backend
 ENV PATH="/app/backend/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
     AVOIRLY_MODE=hosted AVOIRLY_STORAGE_ROOT=/tmp/avoirly

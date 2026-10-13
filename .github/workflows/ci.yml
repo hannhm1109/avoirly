@@ -59,7 +59,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify container ownership with a private source checkout
+        run: chmod -R go-rwx backend scripts
       - run: docker build -f backend/Dockerfile -t avoirly-api:test .
+      - run: docker run --rm avoirly-api:test alembic -c /app/backend/alembic.ini heads
       - run: docker build -f web/Dockerfile -t avoirly-web:test .
       - run: docker build -f backend/Dockerfile.ops -t avoirly-ops:test .
       - run: docker run --rm avoirly-ops:test pg_dump --version
+      - run: docker run --rm avoirly-ops:test python -c "from pathlib import Path; from recovery.config import Settings; Path('/app/scripts/check-monitor.py').read_text()"
