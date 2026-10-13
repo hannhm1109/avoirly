@@ -1,0 +1,39 @@
+{$AVOIRLY_WEB_HOST} {
+    request_body {
+        max_size 11MB
+    }
+    reverse_proxy avoirly-web:3000
+}
+
+{$AVOIRLY_API_HOST} {
+    request_body {
+        max_size 11MB
+    }
+    @app path /api/v1/* /ops/metrics
+    handle @app {
+        reverse_proxy avoirly-api:8000
+    }
+    handle {
+        respond 404
+    }
+}
+
+{$AVOIRLY_AUTH_HOST} {
+    @backup path /storage/v1/object/avoirly-backups/*
+    handle @backup {
+        request_body {
+            max_size 100MB
+        }
+        reverse_proxy api-gw:8000
+    }
+    @supabase path /auth/v1/* /storage/v1/*
+    handle @supabase {
+        request_body {
+            max_size 11MB
+        }
+        reverse_proxy api-gw:8000
+    }
+    handle {
+        respond 404
+    }
+}

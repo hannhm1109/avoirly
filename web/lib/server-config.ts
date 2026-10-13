@@ -29,9 +29,25 @@ export function serverConfig() {
   }
   const supabase = process.env.SUPABASE_URL || "";
   const publishable = process.env.SUPABASE_PUBLISHABLE_KEY || "";
+  const deployment = process.env.AVOIRLY_SUPABASE_DEPLOYMENT || "managed";
+  if (!["managed", "self_hosted"].includes(deployment))
+    throw new Error("Select managed or self_hosted Supabase deployment.");
+  if (hosted) {
+    const origin = new URL(supabase);
+    if (
+      origin.protocol !== "https:" ||
+      origin.pathname !== "/" ||
+      origin.search ||
+      origin.hash ||
+      origin.username ||
+      origin.password
+    )
+      throw new Error("Configure a Supabase HTTPS origin.");
+  }
   if (
     hosted &&
-    (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(supabase) ||
+    ((deployment === "managed" &&
+      !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(supabase)) ||
       !publishable.startsWith("sb_publishable_"))
   )
     throw new Error("Configure Supabase server-side auth.");

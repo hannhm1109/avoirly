@@ -24,6 +24,8 @@ Next: follow the [configuration checklist](docs/CONFIGURE.md), then the
 [operations runbook](docs/OPERATIONS.md). [Progress](docs/PROGRESS.md) separates
 completed verification from pending hosted gates.
 
+For the current $0 hosting budget, see the [self-hosting preparation](docs/SELF_HOSTING.md).
+
 Start with the [web setup guide](docs/WEB.md) to use the application at
 **http://127.0.0.1:3000**, or run the offline CLI example below. The
 [backend guide](docs/BACKEND.md), [progress](docs/PROGRESS.md) and

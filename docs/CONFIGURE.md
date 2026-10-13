@@ -1,5 +1,9 @@
 # Phase 4 — your configuration checklist
 
+The current $0 hosting path is described in [SELF_HOSTING.md](SELF_HOSTING.md).
+It keeps the user's existing Supabase projects available. The managed
+Supabase/Render instructions below remain an alternative; they are not deployed.
+
 The code and local tests can be completed without your accounts. A hosted pilot
 is **not ready until the live gates below pass**. Nothing in this repository
 automatically creates a paid account, deploys the application or sends email.

@@ -33,6 +33,7 @@ class Settings:
     storage_root: Path
     local_owner: UUID | None
     mode: str = "local"
+    supabase_deployment: str = "managed"
     lease_seconds: int = 120
     model: str = ""
     web_origin: str = "http://127.0.0.1:3000"
@@ -58,6 +59,8 @@ class Settings:
     def validate(self):
         if self.mode not in ("local", "hosted"):
             raise RuntimeError("Select explicit local or hosted mode.")
+        if self.supabase_deployment not in ("managed", "self_hosted"):
+            raise RuntimeError("Select managed or self_hosted Supabase deployment.")
         if not self.database_url.startswith("postgresql+psycopg://"):
             raise RuntimeError("A PostgreSQL psycopg connection is required.")
         if self.lease_seconds < 10:
@@ -91,7 +94,9 @@ class Settings:
             raise RuntimeError("Hosted PostgreSQL requires TLS (sslmode=require or stronger).")
         origin_url(self.api_origin, https=True)
         project = origin_url(self.supabase_url, https=True)
-        if not re.fullmatch(r"[a-z0-9-]+\.supabase\.co", project.hostname or ""):
+        if self.supabase_deployment == "managed" and not re.fullmatch(
+            r"[a-z0-9-]+\.supabase\.co", project.hostname or ""
+        ):
             raise RuntimeError("Configure the managed Supabase project HTTPS origin.")
         if not self.supabase_secret_key.startswith("sb_secret_"):
             raise RuntimeError("Configure a server-only Supabase secret API key.")
@@ -110,6 +115,7 @@ class Settings:
             storage_root=Path(os.environ.get("AVOIRLY_STORAGE_ROOT", ".private")).resolve(),
             local_owner=UUID(owner) if owner else None,
             mode=os.environ.get("AVOIRLY_MODE", "disabled"),
+            supabase_deployment=os.environ.get("AVOIRLY_SUPABASE_DEPLOYMENT", "managed"),
             lease_seconds=int(os.environ.get("AVOIRLY_LEASE_SECONDS", "120")),
             model=os.environ.get("OPENAI_MODEL", "").strip(),
             web_origin=os.environ.get("AVOIRLY_WEB_ORIGIN", "http://127.0.0.1:3000"),

@@ -1,0 +1,76 @@
+# Layer on the reviewed Supabase Docker stack; see docs/SELF_HOSTING.md.
+# Only the reverse proxy publishes internet-facing ports.
+services:
+  avoirly-api:
+    image: avoirly-api:${AVOIRLY_RELEASE:?Set the application release}
+    build:
+      context: ${AVOIRLY_SOURCE_DIR:?Set the absolute application source directory}
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment: &backend
+      AVOIRLY_MODE: hosted
+      AVOIRLY_SUPABASE_DEPLOYMENT: self_hosted
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD}@db:5432/postgres?sslmode=require
+      AVOIRLY_WEB_ORIGIN: https://${AVOIRLY_WEB_HOST:?Set the web hostname}
+      AVOIRLY_API_ORIGIN: https://${AVOIRLY_API_HOST:?Set the API hostname}
+      SUPABASE_URL: ${SUPABASE_PUBLIC_URL:?Set the Supabase HTTPS origin}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:?Generate the server secret key}
+      AVOIRLY_PILOT_OWNER_IDS: ${AVOIRLY_PILOT_OWNER_IDS:?Create invited pilot accounts first}
+      AVOIRLY_METRICS_TOKEN: ${AVOIRLY_METRICS_TOKEN:?Generate the operations token}
+      OPENAI_MODEL: ${AVOIRLY_OPENAI_MODEL:-}
+    depends_on:
+      db: {condition: service_healthy}
+      api-gw: {condition: service_healthy}
+  avoirly-worker:
+    image: avoirly-api:${AVOIRLY_RELEASE}
+    command: python -m recovery.worker
+    restart: unless-stopped
+    environment:
+      <<: *backend
+      OPENAI_API_KEY: ${AVOIRLY_OPENAI_API_KEY:-}
+      AVOIRLY_INPUT_USD_PER_MILLION: ${AVOIRLY_INPUT_USD_PER_MILLION:-}
+      AVOIRLY_OUTPUT_USD_PER_MILLION: ${AVOIRLY_OUTPUT_USD_PER_MILLION:-}
+    depends_on:
+      avoirly-api: {condition: service_started}
+  avoirly-web:
+    image: avoirly-web:${AVOIRLY_RELEASE}
+    build:
+      context: ${AVOIRLY_SOURCE_DIR}
+      dockerfile: web/Dockerfile
+    restart: unless-stopped
+    environment:
+      AVOIRLY_MODE: hosted
+      AVOIRLY_SUPABASE_DEPLOYMENT: self_hosted
+      AVOIRLY_WEB_ORIGIN: https://${AVOIRLY_WEB_HOST}
+      AVOIRLY_API_ORIGIN: https://${AVOIRLY_API_HOST}
+      SUPABASE_URL: ${SUPABASE_PUBLIC_URL}
+      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:?Generate the publishable key}
+  avoirly-proxy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      AVOIRLY_WEB_HOST: ${AVOIRLY_WEB_HOST}
+      AVOIRLY_API_HOST: ${AVOIRLY_API_HOST}
+      AVOIRLY_AUTH_HOST: ${AVOIRLY_AUTH_HOST:?Set the Supabase hostname}
+    volumes:
+      - ${AVOIRLY_SOURCE_DIR}/deploy/self-hosted/Caddyfile:/etc/caddy/Caddyfile:ro
+      - avoirly-caddy-data:/data
+      - avoirly-caddy-config:/config
+  avoirly-ops:
+    profiles: [ops]
+    image: avoirly-ops:${AVOIRLY_RELEASE}
+    build:
+      context: ${AVOIRLY_SOURCE_DIR}
+      dockerfile: backend/Dockerfile.ops
+    environment:
+      <<: *backend
+      AVOIRLY_BACKUP_BUCKET: avoirly-backups
+      AVOIRLY_BACKUP_KEY: ${AVOIRLY_BACKUP_KEY:?Generate and save the backup key}
+      AVOIRLY_BACKUP_RETENTION_DAYS: "14"
+      AVOIRLY_ALERT_USD_24H: ${AVOIRLY_ALERT_USD_24H:-0.01}
+volumes:
+  avoirly-caddy-data:
+  avoirly-caddy-config:
