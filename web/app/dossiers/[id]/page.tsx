@@ -291,12 +291,15 @@ export default function CasePage() {
           onDirtyChange={setDraftDirty}
         />
       )}
-      <RecoveryTracker
-        key={`tracking:${data.id}`}
-        data={data}
-        onSaved={load}
-        draftDirty={draftDirty}
-      />
+      {(data.status === "CLAIM_DRAFTED" ||
+        data.recovery.entries.length > 0) && (
+        <RecoveryTracker
+          key={`tracking:${data.id}`}
+          data={data}
+          onSaved={load}
+          draftDirty={draftDirty}
+        />
+      )}
       <section className="panel documents-panel">
         <div className="panel-heading">
           <h2>Documents du dossier</h2>

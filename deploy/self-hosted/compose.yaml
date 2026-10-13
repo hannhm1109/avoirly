@@ -10,7 +10,7 @@ services:
     environment: &backend
       AVOIRLY_MODE: hosted
       AVOIRLY_SUPABASE_DEPLOYMENT: self_hosted
-      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD}@db:5432/postgres?sslmode=require
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD}@db:5432/postgres?sslmode=require&options=-csearch_path%3Davoirly%2Cpublic
       AVOIRLY_WEB_ORIGIN: https://${AVOIRLY_WEB_HOST:?Set the web hostname}
       AVOIRLY_API_ORIGIN: https://${AVOIRLY_API_HOST:?Set the API hostname}
       SUPABASE_URL: ${SUPABASE_PUBLIC_URL:?Set the Supabase HTTPS origin}

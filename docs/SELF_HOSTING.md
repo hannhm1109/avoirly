@@ -76,7 +76,12 @@ installation without a reviewed rotation procedure.
 8. Start only the needed Supabase services (`db auth rest storage imgproxy meta
    studio api-gw`) and `avoirly-proxy`; skip Realtime, Functions and the pooler.
    Build the application images, run migrations explicitly using `avoirly-api`
-   with `--no-deps`, then start API, worker and web. Never start the application
+   with `--no-deps`, then start API, worker and web. Before the first migration,
+   apply `deploy/self-hosted/application-schema.sql` through the private database
+   administration connection. The overlay selects the `avoirly` schema first;
+   application backups do not include Supabase's unrelated public/auth schemas.
+   Full server recovery also needs separately protected Supabase configuration
+   and Auth/account backups. Never start the application
    before its schema and private buckets exist. Verify PostgreSQL TLS rather than
    removing `sslmode=require`.
 9. Verify valid public HTTPS, ES256 JWTs and exact issuer, private bucket access,
@@ -101,6 +106,13 @@ it does not install a scheduler or notifications. These remain pilot gates.
 Studio is intentionally not exposed through public HTTPS. Access the loopback
 gateway through an SSH tunnel if dashboard administration is needed. Keep server
 configuration, signing keys, backup keys, login passwords and SSH keys out of Git.
+
+Synthetic pilot credentials and a copy of the Avoirly backup key are stored
+locally in `.local/pilot-access.dpapi`, encrypted for this Windows user. Run
+`./scripts/show-pilot-access.ps1` locally to view the primary login, add
+`-TestAccount` for the isolation test account, or `-BackupKey` to save the key in
+your password manager. Never paste the output into chat. The encrypted file is
+not portable to a different Windows identity; keep an independent protected copy.
 
 References: [Oracle allowances](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm),
 [Docker installation](https://docs.docker.com/engine/install/ubuntu/),

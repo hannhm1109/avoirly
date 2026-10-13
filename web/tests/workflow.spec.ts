@@ -228,8 +228,35 @@ test("manual sent claim, promise, evidence and partial credits survive reload an
 }) => {
   test.setTimeout(150000);
   const id = await importPair(page);
+  // Processing may be visible before the amount/draft. Preserve that polling
+  // transition so the tracking form must initialize after the amount is known.
+  let intermediateShown = false;
+  await page.route(`**/api/v1/cases/${id}`, async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const response = await route.fetch();
+    const data = await response.json();
+    if (!intermediateShown && data.status === "CLAIM_DRAFTED") {
+      intermediateShown = true;
+      return route.fulfill({
+        response,
+        json: {
+          ...data,
+          status: "PROCESSING",
+          processing_step: "COMPARE",
+          comparison: null,
+          draft: null,
+          potential_credit_net: null,
+        },
+      });
+    }
+    return route.fulfill({ response });
+  });
   await resolvePair(page);
+  expect(intermediateShown).toBeTruthy();
   const tracker = page.getByRole("region", { name: "Suivi de la demande" });
+  await expect(tracker.getByLabel("Montant demandé HT (MAD)")).toHaveValue(
+    "200.00",
+  );
   await page
     .getByLabel("Objet", { exact: true })
     .fill("Demande enregistrée pour le suivi");
