@@ -2,17 +2,39 @@
 
 The current hosting budget is **$0**. Keep the existing two Supabase interview
 projects running. The alternative is self-hosted Supabase and Avoirly containers
-on an Oracle Always Free ARM VM. This is a deployment option, not completed
-hosted-pilot acceptance. Live extraction still requires a separately authorized
+on an Oracle Always Free ARM VM. The synthetic demonstration is deployed; full
+hosted-pilot acceptance remains incomplete. Live extraction requires an authorized
 model/API budget; do not insert a fake key or silently select a model.
 
-## Current preparation
+## Deployed demonstration — verified 14 October 2026
 
-On 13 October 2026, SSH access to the user-created Casablanca VM was verified:
-Ubuntu 24.04 Minimal ARM, 2 OCPUs, 12 GB configured memory, approximately 43 GB free
-disk. Docker Engine and Compose were installed from Docker's official Ubuntu
-repository. Docker logs use rotation. No paid resource or extraction call was
-created by this preparation.
+The user-created Casablanca VM runs Ubuntu 24.04 Minimal ARM with 2 OCPUs and
+12 GB configured memory. Docker Engine and Compose were installed from Docker's
+official Ubuntu repository; container logs rotate. The deployed application
+release is `3a482f62cd0540cf454cb6cc1d429b6943ecf5c3`, with migration `0003_phase5`
+in a separate `avoirly` schema. Its [GitHub checks](https://github.com/hannhm1109/avoirly/actions/runs/38391344263)
+passed: 210 Python tests, one opt-in live test skipped, six browser workflows,
+production web build and all three container builds. ARM images also built and
+ran on the server. Next.js is 16.4.0 following the dependency security update.
+
+- Web: **https://avoirly.84-8-218-133.sslip.io/connexion**
+- API: `https://api.84-8-218-133.sslip.io`
+- Auth/Storage: `https://auth.84-8-218-133.sslip.io`
+
+Public HTTPS certificates and API health were verified. Two confirmed synthetic
+accounts signed in, reloaded and signed out in real Chromium sessions. Cookies
+are HttpOnly, Secure and SameSite=Lax. Cross-account case reads, source downloads
+and mutations returned 404; a foreign-origin write returned 403. A private sample
+PDF uploaded and downloaded successfully. Desktop/mobile captures were inspected,
+with no horizontal overflow at 390 px. The synthetic case was then deleted;
+its source became inaccessible and physical object removal was independently
+verified through Storage listing. No extraction was requested.
+
+Only Caddy publishes internet-facing ports 80/443. Supabase's gateway binds to
+loopback; PostgreSQL, Studio and application container ports are private.
+PostgreSQL TLS is enabled. The two existing managed Supabase projects were not
+changed. Oracle billing/remaining account allowances were not audited; an
+Always Free-eligible shape alone does not certify the account's complete bill.
 
 The reviewed upstream Supabase source is pinned at
 `6f36fe879bebb36bf6a95083af6205c524522933`. Its Docker stack uses PostgreSQL 17,
@@ -80,7 +102,7 @@ installation without a reviewed rotation procedure.
    apply `deploy/self-hosted/application-schema.sql` through the private database
    administration connection. The overlay selects the `avoirly` schema first;
    application backups do not include Supabase's unrelated public/auth schemas.
-   Full server recovery also needs separately protected Supabase configuration
+   Full server recovery also needs protected Supabase configuration
    and Auth/account backups. Never start the application
    before its schema and private buckets exist. Verify PostgreSQL TLS rather than
    removing `sslmode=require`.
@@ -95,13 +117,56 @@ Supabase origin. The default is still `managed`. Signed JWT checks, allowlists,
 owner guards, RLS, private storage, secure cookies and TLS requirements are retained.
 Legacy service-role/anon keys are not an authentication fallback.
 
-## Operations still required
+## Installed operations and verified backups
 
-Self-hosting replaces the provider's operating services with the operator's work:
-security updates, pinned image upgrades, daily encrypted backups, an off-VM copy,
-monitoring, tested restore and notification delivery. The `avoirly-ops` profile
-supports `python -m recovery.backup_job` and `python scripts/check-monitor.py`;
-it does not install a scheduler or notifications. These remain pilot gates.
+On this server, `/usr/local/bin/avoirly-ops` runs the Compose operations container.
+The private runtime is `/home/ubuntu/avoirly-infra/runtime`; its configuration and
+generated signing keys are outside Git. Systemd timers run encrypted application
+backups daily at **02:00 UTC** and monitoring every **five minutes**. Both services
+reported success on 14 October, including the overnight scheduled backup.
+
+Operator commands after connecting with SSH:
+
+```bash
+sudo /usr/local/bin/avoirly-ops monitor
+sudo /usr/local/bin/avoirly-ops backup
+sudo systemctl list-timers avoirly-backup.timer avoirly-monitor.timer
+sudo systemctl show avoirly-backup.service avoirly-monitor.service -p Id -p Result -p ExecMainStatus
+sudo journalctl -u avoirly-backup.service -u avoirly-monitor.service --since today
+```
+
+The `avoirly-ops` Compose profile supports these commands but does not itself
+install timers or notifications. A fresh deployment needs the scheduler installed
+separately. Logs remain private; do not publish configuration or credentials.
+
+Two encrypted archives were downloaded, authenticated, decrypted and restored
+into separate empty PostgreSQL 17 databases, without publishing database ports:
+
+- A new snapshot contained **one synthetic case and one PDF**. Restored table
+  counts and document checksums matched; it contained no extraction, draft or ledger.
+- The actual **14 October 02:00 scheduled archive** restored successfully. It
+  contained zero cases/documents and two usage counters at that earlier point.
+
+Both temporary databases and decrypted files were removed after verification.
+Encrypted copies and non-secret restore reports are in the ignored local folder
+`.local/remote-backups/`; ciphertext checksums matched their server copies.
+Application archives retain their own names for 14 days in the private backup
+bucket. Deleting a live source does not erase already retained encrypted backups.
+
+An initial encrypted full database/Auth/configuration bundle was also copied
+off the VM on 14 October. Its encryption/decryption round trip was verified.
+**Full Supabase/provider restoration was not tested**, and this initial bundle is
+not on the daily application backup schedule. The application restore check
+does not establish full server recovery. Refresh protected configuration/Auth
+copies after changes and establish recurring off-VM copies before real use.
+
+Monitoring currently checks worker heartbeat, leases, queued deletions, failures,
+reported spending and pricing; all checks passed. It has **no external notification
+delivery configured**. Remaining gates include tested operator alert delivery,
+live extraction and labeled evaluation, hosted failure/restart recovery, and
+participant/data-location/retention confirmation. Keep use synthetic until those
+gates pass. Security updates, pinned service upgrades and certificate/key rotation
+remain operator responsibilities. See [CONFIGURE.md](CONFIGURE.md).
 
 Studio is intentionally not exposed through public HTTPS. Access the loopback
 gateway through an SSH tunnel if dashboard administration is needed. Keep server

@@ -228,6 +228,52 @@ the six browser workflows, all three Docker image builds and PostgreSQL client-t
 execution in the operations image. Subsequent documentation-only commits do not
 change the tested implementation.
 
-No hosted configuration, pilot invitation, supplier message, payment provider or
-subscription was created. Phase 4 hosted/live acceptance remains pending. Phase 6
+At the Phase 5 implementation checkpoint, no hosted configuration, pilot
+invitation, supplier message, payment provider or subscription had been created.
+Subsequent self-hosted deployment is recorded below. Phase 4 hosted/live
+acceptance remains pending. Phase 6
 requires observed usage, pricing/provider choices and separate authorization.
+
+## Self-hosted demonstration — 14 October 2026
+
+The user authorized a $0 hosting path while retaining their two managed Supabase
+projects. Avoirly and a pinned self-hosted Supabase stack now run on the user's
+Oracle Casablanca ARM VM. HTTPS web, API and Auth/Storage origins are available;
+database and internal services remain private. PostgreSQL TLS and application
+migration `0003_phase5` were verified. The running application release is
+`3a482f62cd0540cf454cb6cc1d429b6943ecf5c3`.
+
+The self-hosted option retains asymmetric JWT verification, the pilot allowlist,
+secure server-side sessions, API owner guards, RLS and private object storage.
+Additional tests cover explicit custom-origin configuration and real ES256 JWTs.
+Next.js was updated to 16.4.0 after dependency auditing. A tracking form bug was
+fixed: after processing completes, a newly mounted sent-claim form initializes
+its amount from the ready draft. A regression browser check reproduces the
+processing-to-draft transition. Container copies now preserve ownership for
+non-root runtime users even when the source checkout has private permissions.
+
+[GitHub verification for the deployed release](https://github.com/hannhm1109/avoirly/actions/runs/38391344263)
+passed both jobs: **210 Python tests, one live test skipped, six browser workflows**,
+production build and all three container builds. ARM builds and runtime startup
+also succeeded on the VM.
+
+Actual hosted Chromium checks verified two-account login/reload/logout, cookie
+flags, cross-owner read/download/mutation rejection, foreign-origin write rejection,
+private PDF upload/download, and desktop/mobile layout. The synthetic test case
+was deleted and its physical Storage object removal verified. No model call ran.
+
+Daily 02:00 UTC encrypted application backups and five-minute monitor timers are
+installed. Overnight and manual jobs succeeded. Two archives restored into empty
+isolated PostgreSQL databases: one with a case/source and verified checksums, and
+the actual scheduled archive with no cases/sources. Temporary databases/plaintext
+were removed. Encrypted archives and restore reports were copied off the VM.
+An initial encrypted database/Auth/configuration bundle was also copied off-VM;
+only its encryption round trip was tested, not full Supabase restoration.
+
+Pilot credentials and the backup key remain private, with a Windows-user-bound
+encrypted local copy. No invitations or supplier messages were sent, and no
+payment provider or subscription was created. There is no configured OpenAI key
+or model. Full hosted acceptance still needs live extraction/evaluation, hosted
+failure recovery, external alert delivery, recurring protected off-VM/provider
+backups and participant/retention confirmation. The current billing account was
+not audited. [SELF_HOSTING.md](SELF_HOSTING.md) records access and operations.

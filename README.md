@@ -13,18 +13,23 @@ is owed.
 Build Phases 1–3 are implemented. Phase 4 adds hosted authentication, private
 document storage, quotas, encrypted backups, monitoring and deployment templates
 to the Python API, durable worker and French Next.js interface. Phase 4's code is
-locally verified; hosted pilot acceptance still requires account configuration,
-deployment and live checks. No email sending is implemented.
+verified locally and in GitHub Actions. A self-hosted demonstration now runs over
+HTTPS on the Oracle ARM server, with signed login, private uploads, two-account
+isolation and encrypted backup restores verified. Full hosted pilot acceptance
+still requires live extraction, evaluation and operational gates. No email sending
+is implemented.
 
 Phase 5 adds manual sent-claim records, supplier notes, promised credits and
 evidence-backed partial credits with separate net totals and audited corrections.
 See [the recovery tracking guide](docs/RECOVERY_TRACKING.md).
 
-Next: follow the [configuration checklist](docs/CONFIGURE.md), then the
+Next: finish the live gates in the [configuration checklist](docs/CONFIGURE.md), then the
 [operations runbook](docs/OPERATIONS.md). [Progress](docs/PROGRESS.md) separates
 completed verification from pending hosted gates.
 
-For the current $0 hosting budget, see the [self-hosting preparation](docs/SELF_HOSTING.md).
+For the current $0 hosting budget, see the [deployed self-hosting guide](docs/SELF_HOSTING.md).
+The private demonstration is at **https://avoirly.84-8-218-133.sslip.io/connexion**.
+Automatic extraction is not enabled: no OpenAI key or model is configured.
 
 Start with the [web setup guide](docs/WEB.md) to use the application at
 **http://127.0.0.1:3000**, or run the offline CLI example below. The
