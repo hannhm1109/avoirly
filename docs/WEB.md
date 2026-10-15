@@ -82,7 +82,8 @@ confirmation and uses the backend's durable private-file cleanup.
 ## Without an OpenAI key
 
 Automatic extraction requires `OPENAI_API_KEY` and `OPENAI_MODEL` configured in
-the **API and worker terminals**, never in `web/` or a `NEXT_PUBLIC_` variable.
+the worker environment. The API also needs `OPENAI_MODEL`. Keep the API key out
+of the web environment and every `NEXT_PUBLIC_` variable.
 The model must support the input formats and Structured Outputs.
 
 Without configuration, import the files, open the saved case, then choose
@@ -130,6 +131,9 @@ state. Invalid inputs are rejected and navigation unregisters the tool.
 Native WebMCP execution was not verified: no supported browser context was
 available. Ordinary browser operation does not depend on this optional feature.
 
-Phase 4's hosted authentication and operations code is implemented. Real provider
-configuration, deployment and hosted acceptance remain pending. Nothing in the
-local startup commands publishes the application.
+The Oracle deployment has verified HTTPS authentication, private storage, isolation,
+manual recovery tracking and a complete browser workflow using real PDF/image
+extraction. The [live evaluation](EVALUATION.md) is separate from CI fixtures.
+Alert delivery, full recovery preparation and participant configuration remain
+pending; see [PILOT_READY.md](PILOT_READY.md). Local startup commands do not publish
+the app.

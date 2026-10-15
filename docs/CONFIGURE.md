@@ -8,8 +8,9 @@ The code and local tests can be completed without your accounts. A hosted pilot
 is **not ready until the live gates below pass**. Nothing in this repository
 automatically creates a paid account, deploys the application or sends email.
 
-Chosen implementation: Supabase Auth + PostgreSQL + private Storage; Render web,
-API and worker containers, plus scheduled backup and monitoring jobs. Check the
+The deployed path uses self-hosted Supabase Auth + PostgreSQL + private Storage
+and Docker containers on Oracle. The alternative below uses Render web, API and
+worker containers, plus scheduled backup and monitoring jobs. Check the
 providers' current prices before creating resources. The initial region in the
 Render template is Frankfurt; choose a compatible Supabase region and confirm
 the data-location requirements for your intended pilot before uploading real files.
@@ -108,7 +109,12 @@ Verify current rates and set provider-side project spending controls in addition
 to the application's quotas and alert. Reported-usage estimates are not invoices:
 failed/unreported/discarded calls, cache discounts and other billing details can differ.
 
-Run the existing opt-in live test with synthetic documents after configuration:
+The Oracle deployment uses `gpt-5.4-mini-2026-03-17`, with configured rates of
+USD 0.75/million input and USD 4.50/million output tokens. The user confirmed a
+USD 5 enforced monthly project limit and authorized USD 5 total initial tests.
+See [the recorded evaluation](EVALUATION.md); estimates do not certify account
+balance or billing enforcement. For a new configuration, run the existing opt-in
+live test with synthetic documents:
 
 ```powershell
 $env:AVOIRLY_LIVE = '1'
@@ -153,21 +159,27 @@ Use synthetic data until these are all checked:
 - [x] Both invited users can sign in, refresh the page and sign out over HTTPS.
 - [x] Session cookies are HttpOnly, Secure and SameSite=Lax; sessions are not cached.
 - [x] User B cannot list/read/change/download user A's case, even using its URL.
-- [ ] An uninvited account and an expired/invalid token are rejected.
-- [ ] A complete real-browser upload → live extraction → review → draft/export works.
-- [ ] Worker restart/expired-lease recovery and failed extraction recovery are verified.
+- [x] An uninvited account and an expired/invalid token are rejected.
+- [x] A complete real-browser upload → live extraction → review → draft/export works.
+- [x] Worker restart/expired-lease recovery and failed extraction recovery are verified.
 - [x] Private-bucket access and deletion (including delayed cleanup) are verified.
 - [x] An encrypted scheduled backup is restored and verified in a separate environment.
 - [ ] Monitoring failure and spending alerts reach the selected operator.
-- [ ] About 20 labeled synthetic/consented pairs are evaluated; report sample size,
+- [x] About 20 labeled synthetic/consented pairs are evaluated; report sample size,
       supported coverage, review rate, false drafts, latency and cost. Zero false
       drafts in this set is a gate, not a production-wide accuracy claim.
 - [ ] Operator contact, data locations, actual retention and pilot access are confirmed
       with participants before real supplier documents are accepted.
 
-Checked hosted gates were verified on 14 October 2026 against the self-hosted
+Checked hosted gates were verified on 14–15 October 2026 against the self-hosted
 Oracle deployment. [SELF_HOSTING.md](SELF_HOSTING.md) records the release, evidence
 and restore limits; these checks do not describe a managed Supabase/Render deployment.
+Real PDF/image extraction and the complete hosted browser flow passed on the
+deployed release. An expired lease and a controlled SDK network failure recovered
+through new attempts on isolated synthetic cases. The [evaluation](EVALUATION.md)
+records 20 development pairs plus five fresh held-out pairs, with zero false
+drafts, all nine ambiguous cases blocked and one supported scan requiring review.
+[PILOT_READY.md](PILOT_READY.md) lists the remaining credential and operational work.
 
 Only after all these gates pass is Phase 4's **hosted pilot acceptance** complete.
 Phase 5 adds manual recovery tracking; see [RECOVERY_TRACKING.md](RECOVERY_TRACKING.md).

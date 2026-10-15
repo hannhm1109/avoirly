@@ -1,7 +1,8 @@
 # Phase 5 — manual claim and credit tracking
 
 This implements the guide's later recovery-tracking extension. Hosted Phase 4
-configuration and pilot acceptance remain separate pending work. No account,
+configuration is deployed; remaining pilot acceptance gates are tracked in
+[PILOT_READY.md](PILOT_READY.md). No account,
 subscription or sending service is required to use this feature locally.
 
 ## Migration proposal and implemented scope

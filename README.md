@@ -16,8 +16,9 @@ to the Python API, durable worker and French Next.js interface. Phase 4's code i
 verified locally and in GitHub Actions. A self-hosted demonstration now runs over
 HTTPS on the Oracle ARM server, with signed login, private uploads, two-account
 isolation and encrypted backup restores verified. Full hosted pilot acceptance
-still requires live extraction, evaluation and operational gates. No email sending
-is implemented.
+still requires operator alert delivery, full recovery preparation and participant
+configuration. Live PDF/image extraction, failure recovery and a labeled synthetic
+evaluation now pass. No supplier email sending is implemented.
 
 Phase 5 adds manual sent-claim records, supplier notes, promised credits and
 evidence-backed partial credits with separate net totals and audited corrections.
@@ -29,7 +30,13 @@ completed verification from pending hosted gates.
 
 For the current $0 hosting budget, see the [deployed self-hosting guide](docs/SELF_HOSTING.md).
 The private demonstration is at **https://avoirly.84-8-218-133.sslip.io/connexion**.
-Automatic extraction is not enabled: no OpenAI key or model is configured.
+Automatic extraction is enabled with the explicitly selected
+`gpt-5.4-mini-2026-03-17` snapshot. Hosted PDF/image upload → live extraction →
+source review → draft/edit/export and manual recovery tracking are verified.
+The [live evaluation](docs/EVALUATION.md) records 20 development pairs and five
+fresh held-out pairs, with zero false drafts and one conservative review miss.
+[Finish pilot readiness](docs/PILOT_READY.md) lists the remaining credential,
+private-entry command and operational acceptance work.
 
 Start with the [web setup guide](docs/WEB.md) to use the application at
 **http://127.0.0.1:3000**, or run the offline CLI example below. The
@@ -84,9 +91,10 @@ uv run --project backend --locked python -m recovery.cli --po ./samples/po.pdf -
 ```
 
 Select a model supporting Chat Completions, vision, PDF inputs, and Structured
-Outputs in your account. Avoirly deliberately has no default model. No live API
-call was performed during this build because no API key or model was configured.
-Confirm the selected model's capabilities before using real documents.
+Outputs in your account. Avoirly deliberately has no default model. The deployed
+snapshot was verified with real synthetic PDF/image calls on 15 October 2026; see
+the [evaluation record](docs/EVALUATION.md) for settings, costs and limitations.
+Confirm capabilities and access again when changing models.
 
 Each document is sent separately through the official OpenAI SDK using
 `client.chat.completions.parse`, its own Pydantic response format, and `store=False`.
@@ -115,7 +123,8 @@ are not accepted as clean comparisons. No silent truncation occurs.
 
 The report itself **does contain document data**. Store it privately. This workspace
 is under OneDrive and may sync generated outputs according to your OneDrive settings.
-The CLI does not offer account isolation or encryption; those are later-phase work.
+The CLI does not offer account isolation or encryption. The hosted API provides
+owner isolation, private object storage and encrypted application backups.
 
 `report.json` is replaced atomically. `claim_email.txt` is written only for
 `CLAIM_DRAFTED`; an obsolete draft file is removed on a no-draft rerun. Each file
@@ -191,8 +200,9 @@ $env:AVOIRLY_LIVE = "1"
 uv run --project backend --locked pytest backend/tests/test_live.py -m live -q
 ```
 
-This test must pass with the selected model before claiming live extraction has
-been verified. It is not a substitute for the guide's labeled evaluation set.
+This opt-in test does not run in ordinary CI. Separate real hosted browser
+acceptance and the [labeled live evaluation](docs/EVALUATION.md) passed on
+15 October 2026; CI fixtures are not presented as live-model evidence.
 
 ## Project files
 

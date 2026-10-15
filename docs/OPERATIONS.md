@@ -1,6 +1,7 @@
 # Avoirly operations
 
-This runbook covers Phase 4 code. It does not certify a deployed pilot. Complete
+This runbook covers the deployed Phase 4/5 application. It does not certify
+acceptance for real supplier data. Complete
 [CONFIGURE.md](CONFIGURE.md) before accepting real documents. Keep operator
 credentials and all backup artifacts out of Git; `.private/` is ignored but may
 still sync through OneDrive. Use an appropriately protected directory.
@@ -28,6 +29,37 @@ downgrade is deliberately unavailable. Roll back application code only if it is
 compatible with the current schema; otherwise perform a reviewed isolated restore.
 
 ## Monitor and recover processing
+
+On the self-hosted deployment, install/update the tracked scheduler and failure
+hook from the private checkout:
+
+```bash
+sudo bash deploy/self-hosted/install-operations.sh
+sudo /usr/local/bin/avoirly-ops preflight
+sudo /usr/local/bin/avoirly-ops monitor
+```
+
+The installer creates daily 02:00 UTC backup and five-minute monitor timers.
+Both services use the same conditional SMTP failure hook. SMTP is still pending
+on the current host: without `/etc/avoirly/alerts.env`, alert services are skipped.
+Do not interpret a passing monitor as delivered notification evidence.
+
+An operator must install a root-owned mode-0600 `/etc/avoirly/alerts.env` containing
+`AVOIRLY_SMTP_USER`, `AVOIRLY_SMTP_PASSWORD` (a dedicated app password), and
+`AVOIRLY_ALERT_EMAIL`. The current sender uses Gmail TLS SMTP on port 465.
+Enter values through protected tooling, never a command line, public file or chat.
+The Windows helper
+in [PILOT_READY.md](PILOT_READY.md) only collects a secret locally; it does not
+configure SMTP on the host.
+
+After configuration, run `sudo /usr/local/bin/avoirly-ops test-alert` only with
+authorization for that destination, then confirm delivery. One test to the
+privately supplied operator address is already authorized for this deployment;
+it has not been sent. The test service uses the same sender as failure hooks,
+with static content and no document data, logs or credentials. Real failure
+notifications are coalesced per service for one hour; a test does not suppress
+real failure alerts. Unit wiring and mocked SMTP tests are verified, but actual
+monitor/backup failure delivery remains an acceptance gate.
 
 `GET /ops/metrics` requires `Authorization: Bearer <AVOIRLY_METRICS_TOKEN>`.
 It exposes counts, worker liveness and reported token costs, never documents.

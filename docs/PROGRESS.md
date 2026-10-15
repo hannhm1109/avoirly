@@ -2,6 +2,10 @@
 
 Brand: **Avoirly — Spot invoice discrepancies. Simplify supplier claims.**
 
+Current checkpoint: the 15 October release, live evaluation and hosted acceptance
+checks are recorded at the end of this file. Earlier sections are dated historical
+checkpoints, including their then-pending configuration.
+
 ## Phase 1 implementation
 
 Implemented the local CLI, exact extraction contracts, Decimal domain conversion,
@@ -277,3 +281,74 @@ or model. Full hosted acceptance still needs live extraction/evaluation, hosted
 failure recovery, external alert delivery, recurring protected off-VM/provider
 backups and participant/retention confirmation. The current billing account was
 not audited. [SELF_HOSTING.md](SELF_HOSTING.md) records access and operations.
+
+Further readiness audit on 14 October: the deployed API rejected missing,
+expired, tampered, wrong-issuer/audience, anonymous and uninvited signed test
+tokens, while the invited control succeeded. Worker preflight passed every
+infrastructure gate and reported the missing provider key/model explicitly.
+A complete hosted manual browser workflow passed with unique synthetic documents:
+review, 200.00 MAD potential net credit, draft save/reload/copy/export, promises,
+private proof-backed partial credits and audited correction. Queued work survived
+an actual worker stop/restart. Only cases created by these tests were deleted.
+
+Added a private local credential collector and a reusable server operations
+helper. The collector's Windows-user encryption round trips, normalized app
+password input, absence of secret output and invalid-key non-overwrite behavior
+were verified with synthetic credentials. Shell syntax and hosted monitor through
+the operations helper passed. The user authorized up to US$5 in initial API tests
+and one Gmail SMTP test alert; neither was performed because credentials and an
+enforced provider limit are still pending. The actual recipient stays outside
+public documentation. [PILOT_READY.md](PILOT_READY.md) records the next steps.
+
+## Live extraction and recovery — 15 October 2026
+
+The user privately saved the dedicated OpenAI project key and confirmed its
+enforced USD 5 monthly project limit, within the authorized USD 5 total initial
+test allowance. The key is installed only in the worker. The explicit snapshot
+is `gpt-5.4-mini-2026-03-17`, with configured rates of USD 0.75/million input and
+USD 4.50/million output tokens. No credits were purchased by Codex; actual account
+balance and invoices were not audited.
+
+Application release `5b0941f01e220893aaabd2d80c5730642836c7de` is deployed.
+[GitHub CI](https://github.com/hannhm1109/avoirly/actions/runs/38716134516)
+passed **216 Python tests, one opt-in live test skipped, six Chromium workflows**,
+production web build and all three container builds. Local Python tests and lint
+also passed; ARM images built and run on the Oracle server. The schema remains
+`0003_phase5`. All ten worker preflight checks and all monitor checks pass.
+
+Separate hosted Chromium acceptance on this release used real model calls:
+unique PDF/image upload → extraction → source review → 200.00 MAD potential net
+credit → draft edit/save/reload/copy/download, plus mobile layout and deletion.
+The tested credentials and documents were synthetic. Existing user cases were
+preserved; only each test's own case was deleted. No supplier message was sent.
+
+Controlled hosted recovery checks passed. An expired running lease was recovered
+after stopping the normal worker, closing the first attempt and succeeding on a
+new attempt. A separate real SDK connection fault through a closed local proxy
+produced `NETWORK_ERROR` and persisted failure; the public retry path then
+completed through the normal worker. This was a controlled network fault, not a
+real OpenAI outage. The worker and monitor are healthy after both drills.
+
+[Live evaluation](EVALUATION.md) records the baseline, prompt revision, intermediate
+tuning and final results. Prompt 2 retains genuine uncertainty/unsupported-document
+blockers and invalidates unreviewed caches; Python does not filter model warnings.
+The final 20 development plus five fresh held-out pairs produced zero false drafts,
+blocked all nine ambiguous pairs and matched expected status/amount on 24/25.
+One supported scan still required manual review. Normalized critical-field matches
+were 1,043/1,043, which is not a general OCR or production accuracy claim.
+Reported estimates across evaluation, probe and persisted hosted acceptance were
+approximately USD 0.44 at this checkpoint; failed/unreported calls and billing can
+differ. New live calls remain subject to the original total allowance.
+
+The tracked operations installer now provides timers, a guarded lease-recovery
+wrapper and conditional SMTP failure notifications. Mocked alert tests pass.
+Gmail credentials remain deferred, so no alert email or delivery test has occurred.
+A fresh encrypted application archive and a refreshed database/Auth/configuration
+bundle were copied off the VM with matching SHA-256 checksums. The latter includes
+the new private configuration and passed encryption authentication/round-trip
+verification; full Supabase restoration is still untested.
+
+Before accepting real supplier documents: complete alert delivery, recurring
+off-VM copies/full provider recovery, and participant/operator/privacy/retention
+configuration. [PILOT_READY.md](PILOT_READY.md) is the concise remaining-work record.
+Phases 1–5 are implemented; Phase 6 paid plans/payments/onboarding has not started.

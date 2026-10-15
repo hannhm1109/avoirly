@@ -3,17 +3,18 @@
 The current hosting budget is **$0**. Keep the existing two Supabase interview
 projects running. The alternative is self-hosted Supabase and Avoirly containers
 on an Oracle Always Free ARM VM. The synthetic demonstration is deployed; full
-hosted-pilot acceptance remains incomplete. Live extraction requires an authorized
-model/API budget; do not insert a fake key or silently select a model.
+hosted-pilot acceptance remains incomplete. Live extraction is enabled under the
+separately authorized USD 5 initial API-testing allowance; that is not a hosting
+subscription. The remaining credential is the deferred alert SMTP app password.
 
-## Deployed demonstration — verified 14 October 2026
+## Deployed demonstration — verified 15 October 2026
 
 The user-created Casablanca VM runs Ubuntu 24.04 Minimal ARM with 2 OCPUs and
 12 GB configured memory. Docker Engine and Compose were installed from Docker's
 official Ubuntu repository; container logs rotate. The deployed application
-release is `3a482f62cd0540cf454cb6cc1d429b6943ecf5c3`, with migration `0003_phase5`
-in a separate `avoirly` schema. Its [GitHub checks](https://github.com/hannhm1109/avoirly/actions/runs/38391344263)
-passed: 210 Python tests, one opt-in live test skipped, six browser workflows,
+release is `5b0941f01e220893aaabd2d80c5730642836c7de`, with migration `0003_phase5`
+in a separate `avoirly` schema. Its [GitHub checks](https://github.com/hannhm1109/avoirly/actions/runs/38716134516)
+passed: 216 Python tests, one opt-in live test skipped, six browser workflows,
 production web build and all three container builds. ARM images also built and
 ran on the server. Next.js is 16.4.0 following the dependency security update.
 
@@ -28,7 +29,29 @@ and mutations returned 404; a foreign-origin write returned 403. A private sampl
 PDF uploaded and downloaded successfully. Desktop/mobile captures were inspected,
 with no horizontal overflow at 390 px. The synthetic case was then deleted;
 its source became inaccessible and physical object removal was independently
-verified through Storage listing. No extraction was requested.
+verified through Storage listing. These initial authentication/storage checks did
+not request extraction; live extraction was verified separately afterward.
+
+Additional hosted checks rejected missing, expired, tampered, anonymous,
+wrong-issuer/audience and uninvited signed tokens. A unique synthetic pair was
+then reviewed manually in Chromium, producing the expected 200.00 MAD draft.
+Draft save/reload/copy/export, promises, private partial-credit proofs and audited
+correction passed. Queued work persisted across an actual worker stop/restart.
+That manual test case was deleted; it made no provider call or supplier message.
+
+After private key configuration, the actual hosted Chromium flow passed again on
+the deployed release: unique PDF/image upload, live extraction, source review,
+200.00 MAD draft, edit/save/reload/copy/download and mobile layout. Only the
+synthetic test case was deleted. Prompt 2 and the pinned model were verified in
+the running worker; all preflight gates pass. The key belongs only to the worker.
+The user confirmed the enforced USD 5 project limit; configured token rates and
+[evaluation evidence](EVALUATION.md) are recorded separately.
+
+Controlled hosted drills also passed: an expired lease was requeued as a new
+attempt after stopping the old worker, and an actual SDK connection failure
+produced a persisted failure that recovered through retry with the normal worker.
+The latter used a deliberately closed local proxy for the OpenAI client only; it
+was not a real provider outage. Normal processing and monitoring are healthy.
 
 Only Caddy publishes internet-facing ports 80/443. Supabase's gateway binds to
 loopback; PostgreSQL, Studio and application container ports are private.
@@ -123,7 +146,9 @@ On this server, `/usr/local/bin/avoirly-ops` runs the Compose operations contain
 The private runtime is `/home/ubuntu/avoirly-infra/runtime`; its configuration and
 generated signing keys are outside Git. Systemd timers run encrypted application
 backups daily at **02:00 UTC** and monitoring every **five minutes**. Both services
-reported success on 14 October, including the overnight scheduled backup.
+reported success on 15 October, including the overnight scheduled backup. The
+tracked timer installer and SMTP failure hook are installed; external alert
+delivery remains unconfigured pending the deferred app password.
 
 Operator commands after connecting with SSH:
 
@@ -135,9 +160,18 @@ sudo systemctl show avoirly-backup.service avoirly-monitor.service -p Id -p Resu
 sudo journalctl -u avoirly-backup.service -u avoirly-monitor.service --since today
 ```
 
-The `avoirly-ops` Compose profile supports these commands but does not itself
-install timers or notifications. A fresh deployment needs the scheduler installed
-separately. Logs remain private; do not publish configuration or credentials.
+The repository also provides `deploy/self-hosted/operate.sh`. Run it with `sudo
+bash` from the private checkout for `monitor`, `backup`, `preflight`, `status`,
+`stop-worker`, `start-worker` or `requeue-expired`. It infers the sibling `runtime`
+directory; set `AVOIRLY_RUNTIME_DIR` for a different layout. It refuses lease
+recovery while the worker is running. Preflight runs inside the worker, where
+the provider key belongs. Never print resolved Compose configuration.
+
+For a fresh deployment, install the tracked operations wrapper, timers and
+conditional SMTP failure hook with `sudo bash deploy/self-hosted/install-operations.sh`
+from the private checkout. The Compose profile alone does not install scheduling.
+SMTP configuration and delivery verification are separate; see [OPERATIONS.md](OPERATIONS.md).
+Logs remain private; do not publish configuration or credentials.
 
 Two encrypted archives were downloaded, authenticated, decrypted and restored
 into separate empty PostgreSQL 17 databases, without publishing database ports:
@@ -159,12 +193,17 @@ off the VM on 14 October. Its encryption/decryption round trip was verified.
 not on the daily application backup schedule. The application restore check
 does not establish full server recovery. Refresh protected configuration/Auth
 copies after changes and establish recurring off-VM copies before real use.
+The configuration/Auth bundle was refreshed after OpenAI configuration and release
+on 15 October, authenticated by an encryption round trip and copied off the VM
+with a matching SHA-256 checksum. A fresh encrypted application archive was also
+copied off the VM; it was not an additional full-provider restore test.
 
 Monitoring currently checks worker heartbeat, leases, queued deletions, failures,
 reported spending and pricing; all checks passed. It has **no external notification
-delivery configured**. Remaining gates include tested operator alert delivery,
-live extraction and labeled evaluation, hosted failure/restart recovery, and
-participant/data-location/retention confirmation. Keep use synthetic until those
+delivery configured**. The installed failure hook waits for protected SMTP
+configuration and a delivered test. Remaining gates include alert delivery, full
+provider recovery/recurring off-VM copies and participant/data-location/retention
+confirmation. Keep use synthetic until those
 gates pass. Security updates, pinned service upgrades and certificate/key rotation
 remain operator responsibilities. See [CONFIGURE.md](CONFIGURE.md).
 
