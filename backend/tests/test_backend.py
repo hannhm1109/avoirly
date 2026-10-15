@@ -22,7 +22,7 @@ from sqlalchemy.orm import sessionmaker
 from recovery.api.app import create_app, get_owner
 from recovery.api.errors import DomainError
 from recovery.config import Settings
-from recovery.db.models import Base, Comparison, Document, Draft, Job
+from recovery.db.models import Base, Comparison, Document, Draft, Extraction, Job
 from recovery.extraction import ProcessingError
 from recovery.models import Invoice, PurchaseOrder
 from recovery.worker import Worker, acquire_job, guarded, heartbeat, requeue_expired
@@ -289,6 +289,22 @@ def test_partial_extraction_retry_reuses_only_successful_snapshot(env, pair_dict
     second.run_once()
     assert detail(client, case)["status"] == "CLAIM_DRAFTED"
     assert adapter.calls == ["INVOICE"]
+
+
+def test_retry_does_not_reuse_an_extraction_from_an_older_prompt(env, pair_dict):
+    client, settings, sessions = env
+    case = ready(client)
+    analyze(client, case)
+    first, _ = worker(settings, sessions, pair_dict, fail_role="INVOICE")
+    first.run_once()
+    failed = detail(client, case)
+    with sessions.begin() as session:
+        session.execute(update(Extraction).values(prompt_version="previous-prompt"))
+    analyze(client, failed, key="retry-new-prompt", route="retry")
+    second, adapter = worker(settings, sessions, pair_dict)
+    second.run_once()
+    assert adapter.calls == ["PO", "INVOICE"]
+    assert detail(client, case)["status"] == "CLAIM_DRAFTED"
 
 
 def test_expired_lease_cannot_commit_and_is_explicitly_requeued(env, pair_dict):

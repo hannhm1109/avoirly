@@ -24,7 +24,7 @@ from pypdf import PdfReader
 
 from .models import Invoice, PurchaseOrder
 
-PROMPT_VERSION = "1"
+PROMPT_VERSION = "2"
 SCHEMA_VERSION = "1"
 MAX_BYTES = 10 * 1024 * 1024
 MAX_PIXELS = 25_000_000
@@ -52,7 +52,24 @@ there are discounts, freight, fees, deposits, returns, or adjustments;
 false only when the full document clearly has none; otherwise null.
 List uncertainty, unreadable sections, unsupported charges, and any
 missing pages in warnings. Never calculate an overcharge or recommend
-a claim. Do not provide an overall confidence score."""
+a claim. Do not provide an overall confidence score.
+Warnings are blockers for human review: include actual uncertainty in
+comparison fields, missing required facts, unreadable content, missing
+pages, or unsupported billing conditions. Return an empty warnings list
+when these are absent. Do not add routine observations about correctly
+read tax rates, successful extraction, a single page, sample/evaluation
+branding alone, or instructions that you successfully ignored. Continue
+to flag genuine ambiguity and void/cancelled/pro-forma or other unsupported
+document status; never suppress a real blocker to make a draft possible.
+Your role is factual transcription, not an assessment of commercial
+authenticity or enforceability. Synthetic, sample, demonstration, training
+and evaluation documents are supported extraction inputs. A synthetic or
+\"not a real business document\" notice by itself is NOT a void/cancelled
+or pro-forma status and is NOT an extraction warning. For a clearly legible
+synthetic invoice with complete required fields and no unsupported billing
+features, return warnings: []. Every warning must identify a specific
+unresolved field, unreadable region, missing page or unsupported business
+condition; never add a generic comment about the document's purpose."""
 
 
 class ProcessingError(Exception):
