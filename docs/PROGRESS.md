@@ -2,7 +2,7 @@
 
 Brand: **Avoirly — Spot invoice discrepancies. Simplify supplier claims.**
 
-Current checkpoint: the 15 October release, live evaluation and hosted acceptance
+Current checkpoint: the 16 October recovery work, live evaluation and hosted acceptance
 checks are recorded at the end of this file. Earlier sections are dated historical
 checkpoints, including their then-pending configuration.
 
@@ -398,3 +398,67 @@ New documentation was checked for secret patterns and the private operator addre
 The screenshot was inspected and contains synthetic data only. Markdown formatting
 passed. This update changes documentation only; it does not rebuild the tested
 application images or send another email.
+
+## 16 October 2026 — failure alerts, full recovery and pilot policy
+
+The user authorized actual failure-alert drills, encrypted recurring off-server
+backups, full Auth/configuration recovery and a documentation update. They chose
+the two existing synthetic accounts only, cases until manual deletion and 14-day
+backup retention. They explicitly withheld the private alert address from the
+public privacy page and will supply a separate contact later.
+
+Controlled failures of the actual monitor and application-backup services each
+triggered the shared systemd OnFailure mail handler. The operator confirmed both
+emails. Temporary overrides were removed; normal jobs passed afterward.
+
+Added daily clean-shutdown full PostgreSQL snapshots with the custom PostgreSQL
+configuration volume/pgsodium key, Auth, Storage, runtime/signing configuration,
+TLS files, SMTP settings and installed units. Snapshot data is authenticated with
+AES-256-GCM before publication. Writers resume on normal completion and through
+failure cleanup. The systemd run exposed a Git ownership check absent from the
+interactive sudo test; the lookup now trusts only the explicit source directory
+and runs before stopping services. Failure cleanup resumed the application.
+Older application archives are excluded from full snapshots to avoid extending
+retention through nesting; their metadata is cleared only in the restored copy.
+
+Installed a current-user Windows copy task outside OneDrive, with checksum/length
+verification, daily/sign-in/four-hour triggers, private ACLs and 14-day retention.
+It ran with result 0. It requires the PC, signed-in user and network. Historical
+encrypted test archives were moved outside the workspace and enrolled in cleanup.
+Host monitoring now detects stale/missing full snapshots and stale copy
+acknowledgements at 30/36 hours. It is not an external uptime monitor.
+
+Full recovery used the ciphertext downloaded to Windows and copied back, plus
+the independently saved backup key. An internal Docker stack restored both Auth
+logins, JWT acceptance, owner isolation, private buckets, three source/proof file
+hashes, the known 200.00 MAD sent-draft snapshot, 100.00 MAD promise and 75.25 MAD
+evidenced credit, and secure web login/gateway/logout. No ports were published,
+no extraction worker or outbound traffic was enabled, and temporary services,
+network and plaintext were removed. The isolated canary was then deleted from
+the live app; pre-existing cases were preserved. No supplier message was sent.
+
+Recovery release `1c3d409` passed GitHub CI: 218 Python tests, one opt-in live test
+skipped, seven browser workflows, web build and three container builds. Its ARM
+images were built and deployed; worker preflight, six application monitor checks
+and two host freshness checks passed. The French privacy page was checked live
+for actual locations, retention and deferred contact. An Auth/Storage audit
+confirmed exactly two synthetic users matching the allowlist, disabled public/
+anonymous sign-up and private buckets.
+
+Added [the disaster recovery runbook](DISASTER_RECOVERY.md) and
+[pilot policy](PILOT_POLICY.md), and refreshed the README and acceptance guides.
+The remaining user-dependent step is the separately supplied public contact
+before real-participant admission, together with confirming real-data provider
+controls and participant authorization. Replacement-VM/DNS cutover and production
+availability have not been rehearsed. Phase 6 remains unstarted.
+
+Final operator hardening `886152f` passed the complete GitHub CI run. The installed
+systemd full-backup, application-backup and monitor services then each reported
+success with exit status 0. A fresh post-canary-deletion full snapshot completed
+at 10:36 UTC, authenticated and copied to Windows; the scheduled copy task again
+returned 0. The maintenance marker was gone, all ten worker preflight gates passed,
+and the two-user/private-bucket audit passed. Obsolete synthetic diagnostic full
+snapshots and redundant encrypted drill uploads were removed after replacement
+verification; the successfully restored snapshot remains available under retention.
+The non-secret [recovery evidence](operations/2026-10-16-recovery.json) records the
+scope, hashes, results and remaining limitations.

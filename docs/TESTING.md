@@ -6,13 +6,13 @@ accuracy, and a green container build does not prove a deployed system works.
 
 ## Recorded implementation evidence
 
-Application commit `5b0941f01e220893aaabd2d80c5730642836c7de` passed
-[GitHub Actions](https://github.com/hannhm1109/avoirly/actions/runs/38716134516):
+Recovery release `1c3d409cf171f6573aaa4875e49e99fe550ba001` passed
+[GitHub Actions](https://github.com/hannhm1109/avoirly/actions/runs/38886923417):
 
 | Check                       | Recorded result                                                                      |
 | --------------------------- | ------------------------------------------------------------------------------------ |
-| Python with real PostgreSQL | 216 passed; one paid live test skipped                                               |
-| Chromium workflows          | Six passed against real API, worker and temporary database schema                    |
+| Python with real PostgreSQL | 218 passed; one paid live test skipped                                               |
+| Chromium workflows          | Seven passed against real API, worker and temporary database schema                  |
 | Frontend                    | Production build passed                                                              |
 | Containers                  | API, web and operations images built; operations PostgreSQL tools executed           |
 | ARM deployment              | Images built and ran on the Oracle host                                              |
@@ -21,6 +21,9 @@ Application commit `5b0941f01e220893aaabd2d80c5730642836c7de` passed
 
 Documentation-only commits do not change that tested implementation. The existing
 Starlette test-client deprecation warning is recorded; it is not a failed test.
+Operator hardening commit `886152f` also passed the complete
+[CI run](https://github.com/hannhm1109/avoirly/actions/runs/38887866103), including
+the same 218 Python tests and seven browser workflows.
 
 ## Install and run without PostgreSQL or paid calls
 
@@ -112,12 +115,23 @@ Do not retune on an inspected set and continue describing it as blind holdout da
 The hosted record includes real HTTPS/session/owner/file checks, complete manual
 and live-model browser flows, controlled lease/network-failure recovery, private
 deletion checks and isolated application restores. The operator confirmed Gmail
-test receipt. Full provider recovery and actual job-failure email delivery remain
-unchecked; see [CONFIGURE.md](CONFIGURE.md).
+test receipt. Actual monitor/backup failures also delivered confirmed emails on
+16 October. Full PostgreSQL/Auth/Storage/configuration restoration from the
+Windows ciphertext passed in isolated containers; see
+[DISASTER_RECOVERY.md](DISASTER_RECOVERY.md) for scope and limits.
 
-On 16 October 2026, the offline fixture still produced the expected draft; all ten
+During the initial 16 October documentation check, the offline fixture still produced the expected draft; all ten
 hosted worker preflight gates and all six monitor checks passed. The backup and
 monitor services reported success. Local Compose configuration parsed, but the
 Windows Docker Desktop engine was not running, so this documentation pass did not
 repeat local container/database/browser acceptance. No additional paid call or
 test email was required for documentation changes.
+
+The subsequent recovery implementation passed **218 Python tests** with real
+PostgreSQL (one opt-in live test skipped), all **seven Chromium workflows**, Ruff,
+PowerShell syntax parsing, TypeScript and a production web build. The additional
+checks cover stale snapshot/copy metadata and the restricted privacy page.
+Full recovery verified both Auth users, a known draft and ledger, three private
+source/proof files, ownership and secure web sessions. No production cutover,
+replacement server or public DNS failover was performed. The Windows task ran
+successfully; its availability dependency is documented in the recovery runbook.

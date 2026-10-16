@@ -84,6 +84,13 @@ purging; inspect failures. Daily full snapshots imply up to roughly one day of
 data loss, plus any off-server copy delay; this is an operating target, not an
 RPO/RTO guarantee.
 
+Historical operator-created application/configuration test ciphertext was moved
+from the ignored workspace to `Recovery\Legacy`. The copy task expires those
+known filenames using their original UTC dates after a successful sync. This
+does not control any copies previously retained by OneDrive's own version or
+recycle-bin policies. The scheduled recovery destination itself is outside
+OneDrive.
+
 Host commands from the private checkout:
 
 ```bash

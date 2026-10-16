@@ -27,7 +27,7 @@ human verification. Avoirly does not send supplier emails or claim recovered mon
 | Recovery tracking     | Manual external-send records, supplier notes, promised credits and evidence-backed partial credits  |
 | Private access        | Invited accounts, signed sessions, API ownership checks and private document/proof storage          |
 | Durable processing    | PostgreSQL-backed jobs, leases, bounded retries, revision guards and explicit crash recovery        |
-| Operations            | Encrypted application backups, monitoring, usage estimates and Gmail SMTP operator alerts           |
+| Operations            | Encrypted application/full-server backups, automatic off-VM copies, monitoring and Gmail alerts     |
 
 Requested, promised and confirmed net amounts remain separate. Recorded credits
 require human verification and supporting evidence; a credit note is not necessarily
@@ -54,25 +54,42 @@ HTTPS. It requires an operator-provided account; public sign-up is disabled.
 The existing managed Supabase projects are unaffected. Hosting uses the selected
 free-tier setup; OpenAI API usage is separately billed and requires an explicit budget.
 
-Verified evidence for application commit `5b0941f`:
+Verified application evidence:
 
-- [GitHub CI passed](https://github.com/hannhm1109/avoirly/actions/runs/38716134516):
-  **216 Python tests**, six browser workflows, production web build and three
+- [GitHub CI passed](https://github.com/hannhm1109/avoirly/actions/runs/38886923417)
+  for recovery release `1c3d409`: **218 Python tests**, seven browser workflows,
+  production web build and three
   container builds; the paid live test is intentionally skipped in ordinary CI.
+  [Recovery hardening CI also passed](https://github.com/hannhm1109/avoirly/actions/runs/38887866103)
+  for operator scripts at `886152f`.
 - Separate hosted browser acceptance passed with real PDF/image extraction,
   source review, a 200.00 MAD draft, editing, export and mobile layout.
 - Two-account isolation, private files, deletion, controlled worker recovery and
   isolated application-backup restores were verified.
 - The operator confirmed receipt of the single Gmail SMTP test alert.
+- On 16 October, controlled failures of the actual monitor and backup services
+  each triggered an email; the operator confirmed receiving both. Normal jobs
+  were restored and passed afterward.
+- A full encrypted snapshot copied back from Windows restored PostgreSQL,
+  Supabase Auth, private Storage and application configuration in isolated
+  containers. Both account logins, owner isolation, three source/proof files,
+  web sessions and a known draft/credit ledger passed. No production cutover
+  or replacement-VM/DNS failover was performed.
+- Recurring full snapshots and a Windows ciphertext-copy task complement the
+  application backups. See [disaster recovery](docs/DISASTER_RECOVERY.md) for
+  schedules, verification, retention and recovery limitations, and the
+  [non-secret recovery evidence](docs/operations/2026-10-16-recovery.json).
 - [Live evaluation](docs/EVALUATION.md): 20 development pairs plus five fresh
   held-out pairs; **zero false drafts**, all nine ambiguous cases blocked,
   expected status/amount on 24/25. One supported scan still required review.
 
 These are small synthetic demonstrations, not production accuracy or reliability
-claims. A 16 October 2026 check found all worker preflight and monitor checks
-healthy. Before real supplier data, remaining work includes actual failure-alert
-delivery drills, recurring off-VM copies/full Supabase recovery, and participant,
-privacy and retention configuration. See [pilot readiness](docs/PILOT_READY.md).
+claims. Access remains restricted to **two synthetic accounts**. Cases stay until
+manually deleted; encrypted backups retain 14 days. The public privacy/support
+contact is deferred by the operator, and provider data controls must be confirmed
+before real supplier documents. The Windows copy requires the PC, signed-in user
+and network to be available; it is not an always-on cloud backup service.
+See [pilot readiness](docs/PILOT_READY.md) and [pilot policy](docs/PILOT_POLICY.md).
 
 ## Architecture
 
@@ -231,6 +248,8 @@ Live extraction requires separate configuration and explicit opt-in.
 | [Self-hosting](docs/SELF_HOSTING.md)           | Current Oracle/Supabase deployment and protected configuration           |
 | [Configuration checklist](docs/CONFIGURE.md)   | Hosted acceptance gates and managed-provider alternative                 |
 | [Operations](docs/OPERATIONS.md)               | Monitoring, alerts, encrypted backups and isolated restores              |
+| [Disaster recovery](docs/DISASTER_RECOVERY.md) | Full Auth/database/configuration recovery and automatic off-VM copies    |
+| [Pilot policy](docs/PILOT_POLICY.md)           | Synthetic access, data locations, deletion and retention decisions       |
 | [Pilot readiness](docs/PILOT_READY.md)         | Configured credentials and remaining work before real data               |
 | [Progress](docs/PROGRESS.md)                   | Dated implementation and verification history                            |
 | [Build specification](docs/SPEC.md)            | Reference text from the supplied project guide                           |

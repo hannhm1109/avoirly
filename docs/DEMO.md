@@ -67,7 +67,7 @@ for the exact guards and correction behavior.
   requests, worker crashes and concurrent changes.
 - Hosted authorization, private files and owner checks were exercised with two
   synthetic accounts; this is not a claim of formal security certification.
-- CI verified 216 Python tests and six browser workflows for the deployed
+- CI verified 218 Python tests and seven browser workflows for the deployed
   implementation. Paid-model behavior was evaluated separately.
 - Final evaluation used 20 development and five fresh held-out synthetic pairs:
   zero false drafts, 24/25 status-and-amount matches, all nine ambiguous cases
@@ -75,6 +75,8 @@ for the exact guards and correction behavior.
   does not establish production accuracy. [Full results](EVALUATION.md).
 
 There are no verified customers, recovered-money totals or paid subscriptions to
-claim. Full provider recovery, recurring independent backup copies, actual
-failure-notification drills and participant/privacy configuration remain work
-before real supplier data. [Current readiness](PILOT_READY.md).
+claim. Full service recovery from an off-VM ciphertext copy and actual monitor/
+backup failure emails were verified on 16 October. Automated copying depends on
+the operator's Windows PC being available. Public contact is deferred and
+real-participant admission remains closed. Replacement-server/DNS cutover and
+production availability are not established. [Current readiness](PILOT_READY.md).

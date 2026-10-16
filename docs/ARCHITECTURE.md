@@ -119,13 +119,18 @@ Deletion is not a promise to erase every external backup or cloud log immediatel
 
 Daily application backups snapshot the application schema and source/proof
 objects, encrypt with AES-256-GCM and upload to a private backup bucket. Their
-scope excludes Supabase Auth and server configuration. Separate protected bundles
-cover database/Auth/configuration and SMTP setup. Verified application restores
-do not establish full Supabase recovery; that remains a pilot gate.
+scope excludes Supabase Auth and server configuration. A separate daily full
+snapshot pauses writers and PostgreSQL for a clean physical copy, including Auth,
+Storage, PostgreSQL custom configuration/encryption keys, runtime signing keys
+and SMTP setup. It encrypts and authenticates the bundle before publication.
+An automatic Windows task copies verified ciphertext outside the VM and OneDrive.
 
 Five-minute monitoring checks worker health, leases, file cleanup, failures,
 pricing and reported-cost thresholds. Both scheduled jobs share an SMTP failure
-hook. The operator received one test email; actual job-failure delivery was not
-induced. Estimates and quotas are not provider billing caps. Recurring independent
-off-VM copies and full recovery remain pending. See [OPERATIONS.md](OPERATIONS.md)
-and [PILOT_READY.md](PILOT_READY.md) for the current acceptance record.
+hook. Actual monitor/backup failures each delivered an operator-confirmed email.
+Additional host checks detect a full snapshot older than 30 hours or a copy
+acknowledgement older than 36 hours. Estimates and quotas are not billing caps.
+Full recovery from Windows ciphertext passed on an unpublished internal Docker
+network, including Auth logins, file hashes, ownership, draft/ledger and web
+sessions. Replacement hardware, public DNS failover and production cutover remain
+untested. See [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md) for scope and limitations.

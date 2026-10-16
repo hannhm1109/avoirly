@@ -5,17 +5,18 @@ projects running. The alternative is self-hosted Supabase and Avoirly containers
 on an Oracle Always Free ARM VM. The synthetic demonstration is deployed; full
 hosted-pilot acceptance remains incomplete. Live extraction is enabled under the
 separately authorized USD 5 initial API-testing allowance; that is not a hosting
-subscription. Gmail SMTP is configured and accepted one authorized test alert;
-the operator confirmed receipt. No credential is currently missing.
+subscription. Gmail SMTP is configured; the operator received the normal test
+and actual monitor/backup failure alerts. No credential is currently missing.
+Access remains limited to two synthetic accounts; public contact is deferred.
 
 ## Deployed demonstration — browser verified 15 October; health checked 16 October 2026
 
 The user-created Casablanca VM runs Ubuntu 24.04 Minimal ARM with 2 OCPUs and
 12 GB configured memory. Docker Engine and Compose were installed from Docker's
 official Ubuntu repository; container logs rotate. The deployed application
-release is `5b0941f01e220893aaabd2d80c5730642836c7de`, with migration `0003_phase5`
-in a separate `avoirly` schema. Its [GitHub checks](https://github.com/hannhm1109/avoirly/actions/runs/38716134516)
-passed: 216 Python tests, one opt-in live test skipped, six browser workflows,
+release is `1c3d409cf171f6573aaa4875e49e99fe550ba001`, with migration `0003_phase5`
+in a separate `avoirly` schema. Its [GitHub checks](https://github.com/hannhm1109/avoirly/actions/runs/38886923417)
+passed: 218 Python tests, one opt-in live test skipped, seven browser workflows,
 production web build and all three container builds. ARM images also built and
 ran on the server. Next.js is 16.4.0 following the dependency security update.
 
@@ -150,7 +151,16 @@ backups daily at **02:00 UTC** and monitoring every **five minutes**. Both servi
 reported success again on 16 October. The
 tracked timer installer and SMTP failure hook are installed. The app password is
 configured privately, and Gmail SMTP accepted the one authorized test alert.
-The operator confirmed test receipt; actual failure-notification delivery remains unverified.
+The operator confirmed test receipt. Controlled monitor and application-backup
+failure emails were also received on 16 October; normal jobs passed afterward.
+The tracked installer additionally schedules full recovery snapshots at **03:00 UTC**.
+They briefly pause writers and PostgreSQL for consistent physical copies; see
+[DISASTER_RECOVERY.md](DISASTER_RECOVERY.md).
+
+Application images remain release `1c3d409`; operator scripts are at `886152f`.
+The [hardening checks](https://github.com/hannhm1109/avoirly/actions/runs/38887866103)
+also passed Python/PostgreSQL, browser, web and container checks. No application
+schema or API behavior changed in that operator-script update.
 
 Operator commands after connecting with SSH:
 
@@ -191,10 +201,9 @@ bucket. Deleting a live source does not erase already retained encrypted backups
 
 An initial encrypted full database/Auth/configuration bundle was also copied
 off the VM on 14 October. Its encryption/decryption round trip was verified.
-**Full Supabase/provider restoration was not tested**, and this initial bundle is
-not on the daily application backup schedule. The application restore check
-does not establish full server recovery. Refresh protected configuration/Auth
-copies after changes and establish recurring off-VM copies before real use.
+At that historical checkpoint, full Supabase restoration was untested and the
+initial bundle was not recurring. The 16 October full snapshot and restoration
+below supersede that gap; the earlier application-only restore is separate evidence.
 The configuration/Auth bundle was refreshed after OpenAI configuration and release
 on 15 October, authenticated by an encryption round trip and copied off the VM
 with a matching SHA-256 checksum. A fresh encrypted application archive was also
@@ -203,15 +212,29 @@ configuration, a second refreshed encrypted bundle included the app password and
 operations units. Encryption authentication and off-VM checksums passed; no new
 full-provider restoration was performed.
 
-Monitoring currently checks worker heartbeat, leases, queued deletions, failures,
-reported spending and pricing; all checks passed. External SMTP notification is
-configured, Gmail SMTP accepted one test and the operator confirmed receipt.
-Actual monitor/backup failure-notification delivery remains unverified. Remaining
-gates include those failure-alert checks, full
-provider recovery/recurring off-VM copies and participant/data-location/retention
-confirmation. Keep use synthetic until those
-gates pass. Security updates, pinned service upgrades and certificate/key rotation
-remain operator responsibilities. See [CONFIGURE.md](CONFIGURE.md).
+On 16 October, a full snapshot included the entire PostgreSQL cluster, custom
+configuration volume/pgsodium key, Auth, Storage filesystem, runtime/signing
+configuration, SMTP settings and installed units. Ciphertext was copied to the
+Windows recovery destination and back before testing. Isolated restoration
+verified two Auth logins, owner guards, private buckets, three file hashes, a
+200.00 MAD draft, 100.00 MAD promise, 75.25 MAD evidenced credit, and secure web
+login/gateway/logout. No host ports or outbound access were available; temporary
+containers, network and plaintext were removed. A replacement VM, DNS failover
+and production cutover were not tested.
+
+The current-user Windows task pulls encrypted full snapshots at 07:00 local,
+sign-in and every four hours, subject to PC/user/network availability. Copies live
+under LOCALAPPDATA, outside OneDrive. The server monitor also checks full snapshot
+age under 30 hours and successful copy acknowledgement under 36 hours. Server
+and Windows full archives retain 14 days after successful jobs. This is not
+an always-on cloud backup or external uptime monitor.
+
+Only the existing two synthetic accounts are authorized. Cases stay until
+manual deletion. The privacy page reflects actual locations and retention;
+the operator will supply a separate public contact later. Real-participant
+admission remains closed. Security updates, pinned service upgrades and
+certificate/key rotation remain operator responsibilities. See
+[PILOT_POLICY.md](PILOT_POLICY.md) and [CONFIGURE.md](CONFIGURE.md).
 
 Studio is intentionally not exposed through public HTTPS. Access the loopback
 gateway through an SSH tunnel if dashboard administration is needed. Keep server

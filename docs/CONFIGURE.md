@@ -167,12 +167,18 @@ Use synthetic data until these are all checked:
 - [x] An encrypted scheduled backup is restored and verified in a separate environment.
 - [x] SMTP configuration and shared failure-hook wiring verified; one test accepted by Gmail
       and receipt confirmed by the operator.
-- [ ] Actual monitoring/backup failure-alert delivery verified.
+- [x] Actual monitoring/backup failure-alert delivery verified on 16 October;
+      both emails received and normal jobs restored.
+- [x] Full PostgreSQL/Auth/Storage/configuration restore from off-VM ciphertext
+      verified on an internal network; recurring snapshot/copy tasks installed.
+- [x] Synthetic pilot access, Oracle/Windows data locations, manual case deletion
+      and 14-day backup retention recorded and reflected on the privacy page.
 - [x] About 20 labeled synthetic/consented pairs are evaluated; report sample size,
       supported coverage, review rate, false drafts, latency and cost. Zero false
       drafts in this set is a gate, not a production-wide accuracy claim.
-- [ ] Operator contact, data locations, actual retention and pilot access are confirmed
-      with participants before real supplier documents are accepted.
+- [ ] Separate public support/privacy contact supplied and configured, and intended
+      real participants' document authorization/provider data controls confirmed.
+      The operator deferred the contact; real-participant access remains closed.
 
 Checked hosted gates were verified on 14–15 October 2026 against the self-hosted
 Oracle deployment. [SELF_HOSTING.md](SELF_HOSTING.md) records the release, evidence

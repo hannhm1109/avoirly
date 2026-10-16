@@ -12,8 +12,11 @@ from acceptance work; it does not certify readiness for real supplier data.
 | OpenAI project API key                                              | Configured and live-tested                                                        | Worker environment only                                                  |
 | Compatible model and current input/output rates                     | `gpt-5.4-mini-2026-03-17`; USD 0.75 input / 4.50 output per million tokens        | Explicit API/worker model; rates on worker                               |
 | API testing budget and enforced provider spend limit                | US$5 initial tests authorized; user confirmed enforced US$5 monthly project limit | Dedicated OpenAI project's Limits settings                               |
-| Alert SMTP app password                                             | Configured; one test accepted by Gmail SMTP and receipt confirmed                 | Root-owned mode-0600 operations configuration                            |
-| Alert destination and test authorization                            | Destination and one Gmail SMTP test authorized                                    | Private operations configuration                                         |
+| Alert SMTP app password                                             | Configured; test and actual monitor/backup failure emails received                | Root-owned mode-0600 operations configuration                            |
+| Alert destination and test authorization                            | Operational failure drills authorized and completed                               | Private operations configuration                                         |
+| Full recovery/off-VM copies                                         | Encrypted full snapshot restored successfully from Windows ciphertext             | Private server exports and LOCALAPPDATA, outside Git/OneDrive            |
+| Pilot accounts/retention                                            | Two synthetic accounts only; cases until manual deletion; backups 14 days         | Allowlist and documented pilot policy                                    |
+| Public support/privacy contact                                      | Deferred by operator; real-participant admission remains closed                   | Optional web runtime `AVOIRLY_PUBLIC_CONTACT`                            |
 
 No Stripe key or Supabase Pro subscription is required for Phases 1–5. Billing
 and subscriptions are Phase 6. HTTPS certificates are already managed by Caddy;
@@ -82,21 +85,40 @@ Windows identity; maintain independent copies in a password manager.
   bundle includes SMTP configuration and installed operations units; encryption
   authentication and the off-VM ciphertext checksum passed.
 
-## Remaining acceptance work
+## Operations acceptance — 16 October 2026
 
-1. Exercise actual monitor/backup failure-notification delivery in a controlled
-   drill. Normal SMTP test receipt is confirmed; the shared failure hooks are
-   installed, but a failed scheduled job has not triggered a verified email.
-2. Establish recurring off-VM application and configuration/Auth backups and
-   test full Supabase recovery. The initial encrypted configuration bundle was
-   authenticated but has not undergone full provider restoration.
-3. Confirm the intended operator contact, participants, data locations and
-   retention before real supplier files; update the displayed privacy information.
+Actual monitor and backup failures each triggered a received email. Both services
+returned to normal successfully. A full snapshot restored the entire PostgreSQL
+cluster, custom configuration/pgsodium key, Auth, Storage and application
+configuration from the Windows ciphertext copy, using the separately saved key.
+Both account logins, owner isolation, three source/proof hashes, the known
+200.00 MAD draft, 100.00 MAD promise, 75.25 MAD evidenced credit and secure web
+login/gateway/logout passed. The isolated stack had zero host ports and no
+outbound access; it was removed after verification.
+
+The daily full-backup timer and current-user Windows copy task automate recurring
+copies. The latter depends on the PC being on, signed in and connected. Full
+snapshot/copy freshness checks alert at 30/36 hours respectively. Backup retention
+is 14 days, purged after successful jobs. See [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md).
+
+The user selected exactly the existing two synthetic accounts and manual case
+deletion. The public privacy page describes these choices, Oracle Casablanca,
+Windows recovery copies and external provider limitations. The private alert
+address is not used as a public contact.
+
+## Before real participants
+
+The operator will supply a separate public support/privacy contact later.
+Configure and verify it before opening real-participant access. Confirm the
+participants' document authorization, provider data controls and applicable
+privacy information at that point. No new invitations or real supplier files
+are authorized now. A replacement-VM/DNS cutover has not been tested; this remains
+an explicitly scoped synthetic demonstration, not a production availability SLA.
 
 The [configuration checklist](CONFIGURE.md) remains the acceptance record.
 READMEs must distinguish implemented features, actual hosted verification and
 pending live gates. New features or paid plans do not replace these checks.
 
-On 16 October, all ten hosted worker preflight checks and all six monitor checks
-passed. Scheduled backup and monitor services reported success. No new test
-email or paid extraction was sent during the documentation check.
+The initial 16 October documentation check passed all ten worker preflight and
+six application monitor checks. Later recovery work added two host freshness
+checks and the failure-email drills described above.

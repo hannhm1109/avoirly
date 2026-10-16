@@ -1,0 +1,59 @@
+{
+  "verification_date": "2026-10-16",
+  "synthetic_only": true,
+  "checks": {
+    "restored_api_healthy": true,
+    "two_restored_auth_logins": true,
+    "known_draft_and_credit_ledger_match": true,
+    "restored_owner_isolation": true,
+    "source_and_proof_files_verified": 3,
+    "private_buckets_restored": true,
+    "restored_web_login_gateway_logout": true,
+    "off_server_ciphertext_used": true,
+    "isolated_internal_network": true,
+    "published_ports": 0,
+    "database_image": "supabase/postgres:17.6.1.136",
+    "application_release": "avoirly-api:1c3d409cf171f6573aaa4875e49e99fe550ba001",
+    "snapshot_files_verified": 33,
+    "production_cutover": false,
+    "nested_application_archives_excluded": true
+  },
+  "known_canary": {
+    "currency": "MAD",
+    "potential_net": "200.00",
+    "promised_net": "100.00",
+    "confirmed_net": "75.25",
+    "sent_draft_snapshot_verified": true
+  },
+  "failure_alerts": {
+    "monitor_failure_email_received": true,
+    "backup_failure_email_received": true,
+    "normal_services_restored": true
+  },
+  "limits": [
+    "Same host, isolated restored containers; no replacement VM or public DNS cutover",
+    "Windows encrypted-copy task requires PC, signed-in user and network",
+    "Public contact deferred; real-participant admission remains closed"
+  ],
+  "restored_snapshot": {
+    "created_at": "2026-10-16T10:29:18.457477+00:00",
+    "ciphertext_sha256": "8d925b28d8572db8f0763077192f094c49f863e7e4e796e6b56b7e331db69743",
+    "bytes": 11919405,
+    "snapshot_files": 33
+  },
+  "final_operations": {
+    "operator_commit": "886152fa99e054dcc1ccb493dd05495ad90a340b",
+    "ci_url": "https://github.com/hannhm1109/avoirly/actions/runs/38887866103",
+    "full_backup_service_result": "success",
+    "application_backup_service_result": "success",
+    "monitor_service_result": "success",
+    "worker_preflight_all_ten_passed": true,
+    "windows_scheduled_task_last_result": 0,
+    "latest_snapshot_created_at": "2026-10-16T10:36:10.988353+00:00",
+    "latest_ciphertext_sha256": "a3467a4674f860fd5e4b072bb26a6572f47c013d20b856553f2e8144621f1d3b",
+    "latest_ciphertext_verified_on_windows": true,
+    "synthetic_canary_deleted_from_live_app": true,
+    "maintenance_marker_removed": true,
+    "obsolete_diagnostic_snapshots_removed": true
+  }
+}

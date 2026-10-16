@@ -39,8 +39,9 @@ sudo /usr/local/bin/avoirly-ops preflight
 sudo /usr/local/bin/avoirly-ops monitor
 ```
 
-The installer creates daily 02:00 UTC backup and five-minute monitor timers.
-Both services use the same conditional SMTP failure hook. SMTP is configured
+The installer creates daily 02:00 UTC application-backup, 03:00 UTC full-recovery
+and five-minute monitor timers. All three services use the same conditional SMTP
+failure hook. SMTP is configured
 on the current host; the single authorized test was accepted by Gmail SMTP on
 15 October 2026, and the operator confirmed receipt. On a new host,
 alert services are skipped until `/etc/avoirly/alerts.env` exists. A passing monitor
@@ -61,8 +62,12 @@ that test was accepted by SMTP and the operator confirmed receipt. The test
 service uses the same sender as failure hooks,
 with static content and no document data, logs or credentials. Real failure
 notifications are coalesced per service for one hour; a test does not suppress
-real failure alerts. Unit wiring and mocked SMTP tests are verified, but actual
-monitor/backup failure delivery remains an acceptance gate.
+real failure alerts. On 16 October, controlled failures of the actual monitor and
+application-backup services each invoked that hook and delivered an email;
+the operator confirmed both. Temporary test overrides were removed and normal
+monitoring/backups passed afterward. The monitor used a deliberately failing
+spend threshold; the backup used an invalid temporary encryption key before any
+archive write. Neither drill corrupted the live database or stored documents.
 
 `GET /ops/metrics` requires `Authorization: Bearer <AVOIRLY_METRICS_TOKEN>`.
 It exposes counts, worker liveness and reported token costs, never documents.
@@ -114,7 +119,8 @@ success. Retry after concurrent deletion settles.
 The snapshot covers application tables and referenced document objects, including
 manual recovery records, sent-draft snapshots and credit evidence. It does
 not back up Supabase Auth accounts, provider configuration, signing keys or secrets.
-Maintain those separately. A source upload interrupted before its database commit
+The daily full snapshot covers those separately; see
+[DISASTER_RECOVERY.md](DISASTER_RECOVERY.md). A source upload interrupted before its database commit
 can leave an unreferenced storage object; periodically reconcile old bucket objects
 against `documents.storage_key`, `recovery_evidence.storage_key` and
 `deletion_tasks.storage_key` while uploads are
@@ -154,13 +160,19 @@ never an excuse to silently reactivate deleted data.
 
 ## Retention and privacy
 
-The initial encrypted-backup retention is 14 days; confirm it with participants.
+The operator selected encrypted-backup retention of 14 days and live cases until
+manual deletion. Access remains limited to two synthetic accounts; see
+[PILOT_POLICY.md](PILOT_POLICY.md). Full snapshots automatically copy to the
+operator's Windows computer when it is on, signed in and connected. The host
+monitor checks snapshot/copy freshness; this is not an external uptime monitor.
 Live case deletion removes active records and schedules file cleanup. Retained
 backups age out on successful backup-job runs. Provider-managed backups and logs
 have their own retention; document those separately. Source files and extraction
 are sent to the configured model provider; confirm the provider's data controls.
-Update the displayed privacy information with actual operator contact and agreed
-retention before the real-data pilot. No legal-compliance certification is claimed.
+The privacy page reflects Oracle Casablanca, off-VM Windows copies, manual case
+deletion and 14-day backup retention. Public support/privacy contact is deferred
+by the operator; set `AVOIRLY_PUBLIC_CONTACT` when supplied. Real-participant
+admission remains closed. No legal-compliance certification is claimed.
 
 ## Phase 5 migration
 
