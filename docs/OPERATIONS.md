@@ -40,9 +40,11 @@ sudo /usr/local/bin/avoirly-ops monitor
 ```
 
 The installer creates daily 02:00 UTC backup and five-minute monitor timers.
-Both services use the same conditional SMTP failure hook. SMTP is still pending
-on the current host: without `/etc/avoirly/alerts.env`, alert services are skipped.
-Do not interpret a passing monitor as delivered notification evidence.
+Both services use the same conditional SMTP failure hook. SMTP is configured
+on the current host; the single authorized test was accepted by Gmail SMTP on
+15 October 2026, and the operator confirmed receipt. On a new host,
+alert services are skipped until `/etc/avoirly/alerts.env` exists. A passing monitor
+does not establish delivered notification evidence.
 
 An operator must install a root-owned mode-0600 `/etc/avoirly/alerts.env` containing
 `AVOIRLY_SMTP_USER`, `AVOIRLY_SMTP_PASSWORD` (a dedicated app password), and
@@ -54,8 +56,9 @@ configure SMTP on the host.
 
 After configuration, run `sudo /usr/local/bin/avoirly-ops test-alert` only with
 authorization for that destination, then confirm delivery. One test to the
-privately supplied operator address is already authorized for this deployment;
-it has not been sent. The test service uses the same sender as failure hooks,
+privately supplied operator address was authorized for this deployment;
+that test was accepted by SMTP and the operator confirmed receipt. The test
+service uses the same sender as failure hooks,
 with static content and no document data, logs or credentials. Real failure
 notifications are coalesced per service for one hour; a test does not suppress
 real failure alerts. Unit wiring and mocked SMTP tests are verified, but actual

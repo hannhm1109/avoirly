@@ -35,17 +35,17 @@ SDK retry policy; benchmark latency therefore does not describe failure retries.
 
 ## Recorded results
 
-| Measure | Prompt 1 baseline, 20 | Final prompt 2, development 20 | Final prompt 2, fresh holdout 5 |
-| --- | ---: | ---: | ---: |
-| Expected status and amount | 9/20 | 19/20 | 5/5 |
-| False drafts | 0/20 | 0/20 | 0/5 |
-| Ambiguous cases blocked | 7/7 | 7/7 | 2/2 |
-| Normalized critical fields matched | 837/838 | 838/838 | 205/205 |
-| Correct / predicted findings | 2/2 | 9/9 | 2/2 |
-| Found / expected findings | 2/10 | 9/10 | 2/2 |
-| Cases requiring review | 18/20 | 8/20 | 2/5 |
-| Median seconds per pair | 4.7345 | 4.5335 | 4.709 |
-| Reported estimated USD | 0.11615925 | 0.11922675 | 0.0314940 |
+| Measure                            | Prompt 1 baseline, 20 | Final prompt 2, development 20 | Final prompt 2, fresh holdout 5 |
+| ---------------------------------- | --------------------: | -----------------------------: | ------------------------------: |
+| Expected status and amount         |                  9/20 |                          19/20 |                             5/5 |
+| False drafts                       |                  0/20 |                           0/20 |                             0/5 |
+| Ambiguous cases blocked            |                   7/7 |                            7/7 |                             2/2 |
+| Normalized critical fields matched |               837/838 |                        838/838 |                         205/205 |
+| Correct / predicted findings       |                   2/2 |                            9/9 |                             2/2 |
+| Found / expected findings          |                  2/10 |                           9/10 |                             2/2 |
+| Cases requiring review             |                 18/20 |                           8/20 |                             2/5 |
+| Median seconds per pair            |                4.7345 |                         4.5335 |                           4.709 |
+| Reported estimated USD             |            0.11615925 |                     0.11922675 |                       0.0314940 |
 
 Machine-readable evidence: [baseline](evaluation/2026-10-15-baseline-prompt1.json),
 [final development](evaluation/2026-10-15-prompt2-development.json),
@@ -90,10 +90,10 @@ and application alerts do not themselves impose a provider billing cap.
 Generate private data and run only with an explicitly approved API allowance:
 
 ```powershell
-uv run --project backend --locked python scripts/generate-evaluation.py --out .local/evaluation-example
-uv run --project backend --locked python scripts/generate-evaluation.py --out .local/evaluation-holdout-example --fresh-holdout --holdout-batch 2
+python -m uv run --project backend --locked python scripts/generate-evaluation.py --out .local/evaluation-example
+python -m uv run --project backend --locked python scripts/generate-evaluation.py --out .local/evaluation-holdout-example --fresh-holdout --holdout-batch 2
 # Configure the API key, model and rates privately in the process environment.
-uv run --project backend --locked python scripts/evaluate-extraction.py --corpus .local/evaluation-example --out .local/evaluation-example-results --max-usd 1.00 --allow-live
+python -m uv run --project backend --locked python scripts/evaluate-extraction.py --corpus .local/evaluation-example --out .local/evaluation-example-results --max-usd 1.00 --allow-live
 ```
 
 The generator uses the dependencies locked in `backend/uv.lock`.

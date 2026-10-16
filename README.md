@@ -1,223 +1,242 @@
 # Avoirly
 
-*Spot invoice discrepancies. Simplify supplier claims.*
+_Spot invoice discrepancies. Simplify supplier claims._
 
-Avoirly compares one purchase order with one supplier invoice, explains potential
-billing differences with source evidence, and prepares a French or English email
-for your review. The amount is **Potential credit excluding tax**, not confirmed
-recovery. Documents alone cannot establish delivery, amendments, or whether a credit
-is owed.
+Avoirly turns a purchase order and supplier invoice into an evidence-backed
+comparison and an editable French or English claim draft. It combines structured
+document extraction with deterministic Python checks, human review and manual
+credit tracking.
 
-## Build status
+[Private demo](https://avoirly.84-8-218-133.sslip.io/connexion) ·
+[Quick start](#quick-start) · [Architecture](docs/ARCHITECTURE.md) ·
+[Demo walkthrough](docs/DEMO.md) · [Documentation](#documentation)
 
-Build Phases 1–3 are implemented. Phase 4 adds hosted authentication, private
-document storage, quotas, encrypted backups, monitoring and deployment templates
-to the Python API, durable worker and French Next.js interface. Phase 4's code is
-verified locally and in GitHub Actions. A self-hosted demonstration now runs over
-HTTPS on the Oracle ARM server, with signed login, private uploads, two-account
-isolation and encrypted backup restores verified. Full hosted pilot acceptance
-still requires operator alert delivery, full recovery preparation and participant
-configuration. Live PDF/image extraction, failure recovery and a labeled synthetic
-evaluation now pass. No supplier email sending is implemented.
+**Amounts are potential credit excluding tax.** A discrepancy does not prove that
+a supplier owes a credit. Delivery, amendments and previously issued credits need
+human verification. Avoirly does not send supplier emails or claim recovered money.
 
-Phase 5 adds manual sent-claim records, supplier notes, promised credits and
-evidence-backed partial credits with separate net totals and audited corrections.
-See [the recovery tracking guide](docs/RECOVERY_TRACKING.md).
+## What the application does
 
-Next: finish the live gates in the [configuration checklist](docs/CONFIGURE.md), then the
-[operations runbook](docs/OPERATIONS.md). [Progress](docs/PROGRESS.md) separates
-completed verification from pending hosted gates.
+| Capability            | Behavior                                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------- |
+| Document intake       | One PO and one invoice, each PDF, PNG or JPEG, with validated file signatures and size limits       |
+| Structured extraction | Separate typed PO/invoice extraction calls; preserves source snippets and page references           |
+| Billing checks        | Deterministic quantity/price comparisons using Decimal; no double-counting or cross-product offsets |
+| Human review          | Blocking issues, original documents, audited corrections and explicit pairing confirmation          |
+| Claim drafts          | French or English subject/body, editable versions, copy and text download                           |
+| Recovery tracking     | Manual external-send records, supplier notes, promised credits and evidence-backed partial credits  |
+| Private access        | Invited accounts, signed sessions, API ownership checks and private document/proof storage          |
+| Durable processing    | PostgreSQL-backed jobs, leases, bounded retries, revision guards and explicit crash recovery        |
+| Operations            | Encrypted application backups, monitoring, usage estimates and Gmail SMTP operator alerts           |
 
-For the current $0 hosting budget, see the [deployed self-hosting guide](docs/SELF_HOSTING.md).
-The private demonstration is at **https://avoirly.84-8-218-133.sslip.io/connexion**.
-Automatic extraction is enabled with the explicitly selected
-`gpt-5.4-mini-2026-03-17` snapshot. Hosted PDF/image upload → live extraction →
-source review → draft/edit/export and manual recovery tracking are verified.
-The [live evaluation](docs/EVALUATION.md) records 20 development pairs and five
-fresh held-out pairs, with zero false drafts and one conservative review miss.
-[Finish pilot readiness](docs/PILOT_READY.md) lists the remaining credential,
-private-entry command and operational acceptance work.
+Requested, promised and confirmed net amounts remain separate. Recorded credits
+require human verification and supporting evidence; a credit note is not necessarily
+a cash refund. Dashboard totals cover the displayed page and stay grouped by currency.
 
-Start with the [web setup guide](docs/WEB.md) to use the application at
-**http://127.0.0.1:3000**, or run the offline CLI example below. The
-[backend guide](docs/BACKEND.md), [progress](docs/PROGRESS.md) and
-[source specification](docs/SPEC.md) explain the architecture and remaining gates.
+<details>
+<summary>View the hosted interface with a synthetic 200 MAD example</summary>
 
-## Run the example now
+![Avoirly source-linked comparison, editable claim draft and manual recovery tracking using synthetic data](docs/assets/hosted-synthetic-case.png)
 
-From this project folder on Windows, the prepared environment can run:
+Captured during the verified hosted browser flow. All business data and the account
+shown are synthetic; the amount is potential net credit, not confirmed recovery.
+
+</details>
+
+## Current status
+
+Phases **1–5 are implemented**: comparison core, API/worker, French web interface,
+private-pilot infrastructure and manual recovery tracking. Phase 6—paid plans,
+payments and entitlements—has not started.
+
+The private demonstration runs on Oracle ARM with self-hosted Supabase and Caddy
+HTTPS. It requires an operator-provided account; public sign-up is disabled.
+The existing managed Supabase projects are unaffected. Hosting uses the selected
+free-tier setup; OpenAI API usage is separately billed and requires an explicit budget.
+
+Verified evidence for application commit `5b0941f`:
+
+- [GitHub CI passed](https://github.com/hannhm1109/avoirly/actions/runs/38716134516):
+  **216 Python tests**, six browser workflows, production web build and three
+  container builds; the paid live test is intentionally skipped in ordinary CI.
+- Separate hosted browser acceptance passed with real PDF/image extraction,
+  source review, a 200.00 MAD draft, editing, export and mobile layout.
+- Two-account isolation, private files, deletion, controlled worker recovery and
+  isolated application-backup restores were verified.
+- The operator confirmed receipt of the single Gmail SMTP test alert.
+- [Live evaluation](docs/EVALUATION.md): 20 development pairs plus five fresh
+  held-out pairs; **zero false drafts**, all nine ambiguous cases blocked,
+  expected status/amount on 24/25. One supported scan still required review.
+
+These are small synthetic demonstrations, not production accuracy or reliability
+claims. A 16 October 2026 check found all worker preflight and monitor checks
+healthy. Before real supplier data, remaining work includes actual failure-alert
+delivery drills, recurring off-VM copies/full Supabase recovery, and participant,
+privacy and retention configuration. See [pilot readiness](docs/PILOT_READY.md).
+
+## Architecture
+
+The browser talks to a Next.js server-side gateway. FastAPI verifies ownership and
+persists cases and jobs in PostgreSQL. A separate worker extracts documents,
+validates fields, matches eligible lines and calculates discrepancies. Draft text
+is generated from validated results by deterministic templates.
+
+**The model extracts fields; Python decides eligibility and calculates amounts.**
+An unresolved extraction warning blocks automatic drafting. Document text is
+untrusted data and supplies no executable tools or instructions.
+
+| Layer                 | Technology                                                   |
+| --------------------- | ------------------------------------------------------------ |
+| Interface             | Next.js, React, TypeScript, French workflow                  |
+| API and domain core   | FastAPI, Pydantic, SQLAlchemy, Python Decimal                |
+| Persistence           | PostgreSQL 17, Alembic migrations, durable job/lease records |
+| Extraction            | Official OpenAI SDK with typed Structured Outputs            |
+| Hosted identity/files | Supabase Auth and private Storage                            |
+| Deployment            | Docker Compose, Oracle ARM, Caddy HTTPS, systemd jobs        |
+| Verification          | pytest, real PostgreSQL integration tests, Playwright, Ruff  |
+
+See [architecture and design decisions](docs/ARCHITECTURE.md) for trust boundaries,
+job recovery, schema layout and backup scope.
+
+## Quick start
+
+Requirements: Python **3.12+** and Git. The verified environment used Python 3.14;
+CI uses Python 3.14 and Node 24. The offline example needs neither PostgreSQL nor
+an API key. Run commands from the repository root.
 
 ```powershell
-.\backend\.venv\Scripts\python.exe -m recovery.cli --fixture .\samples\pair.json --out .\output\demo
+git clone https://github.com/hannhm1109/avoirly.git
+cd avoirly
+python -m pip install uv==0.12.19
+python -m uv sync --project backend --locked
+python -m uv run --project backend --locked python -m recovery.cli --fixture ./samples/pair.json --out ./output/demo
 ```
 
-Expected result:
+Expected output:
 
 ```text
 Avoirly: CLAIM_DRAFTED
 Potential credit excluding tax: 200.00 MAD
 ```
 
-Open `output/demo/report.json` to inspect the extracted values, validation, source
-snippets, findings, and final status. Open `output/demo/claim_email.txt` to review
-the French email. Add `--language en` for English. Fixture mode never calls OpenAI.
+Inspect `output/demo/report.json` and `output/demo/claim_email.txt`. Add
+`--language en` for English. Fixture mode never calls OpenAI. In this prepared
+Windows workspace, `./backend/.venv/Scripts/python.exe` can replace
+`python -m uv run --project backend --locked python` after dependencies are installed.
 
-## Reproducible installation
+### Run the web app locally
 
-Requires Python 3.12 or newer. The completed checks used Python 3.14.3 on Windows.
-The resolved dependencies are in `backend/uv.lock`.
-
-```powershell
-python -m pip install uv
-uv sync --project backend --locked
-uv run --project backend --locked python -m recovery.cli --fixture ./samples/pair.json --out ./output/demo
-uv run --project backend --locked pytest backend/tests -q
-```
-
-The installed console command `avoirly` also works in the project environment.
-On macOS/Linux the environment interpreter is `backend/.venv/bin/python`.
-
-## Process documents
-
-The actual PDF and PNG sample files contain only synthetic business information.
-Both sources are validated before either API call. To use extraction, set the
-configuration in your shell; `.env.example` lists placeholders and is not loaded
-automatically.
+The following PowerShell setup uses Docker **only for PostgreSQL**; API, worker
+and web run locally. Start Docker Desktop first. Local mode is for one developer
+on loopback and must not be exposed publicly. Node.js and npm are also required.
 
 ```powershell
-$env:OPENAI_API_KEY = "your-key"
-$env:OPENAI_MODEL = "your-selected-compatible-model"
-uv run --project backend --locked python -m recovery.cli --po ./samples/po.pdf --invoice ./samples/invoice.png --language fr --out ./output/live-sample
+docker compose up -d --wait postgres
+$env:DATABASE_URL = 'postgresql+psycopg://avoirly:local-avoirly-only@127.0.0.1:55432/avoirly'
+. ./scripts/local-env.ps1
+python -m uv run --project backend --locked alembic -c backend/alembic.ini upgrade head
 ```
 
-Select a model supporting Chat Completions, vision, PDF inputs, and Structured
-Outputs in your account. Avoirly deliberately has no default model. The deployed
-snapshot was verified with real synthetic PDF/image calls on 15 October 2026; see
-the [evaluation record](docs/EVALUATION.md) for settings, costs and limitations.
-Confirm capabilities and access again when changing models.
-
-Each document is sent separately through the official OpenAI SDK using
-`client.chat.completions.parse`, its own Pydantic response format, and `store=False`.
-The SDK uses a 90-second timeout and at most two retries (three transport attempts)
-per extraction; there is no outer retry loop. Document contents never supply tools,
-links to fetch, or instructions to execute. The request shapes were checked against
-the official [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs),
-[file inputs](https://developers.openai.com/api/docs/guides/file-inputs), and
-[image inputs](https://developers.openai.com/api/docs/guides/images-vision) documentation.
-
-Files must be PDF, PNG, or JPEG with matching signatures and extensions. Limits are
-10 MiB per file, 10 PDF pages, 25 megapixels per image, and 100 extracted product
-lines. Encrypted PDFs, multi-frame images, invalid files, and incomplete output
-are not accepted as clean comparisons. No silent truncation occurs.
-
-## Understand the report
-
-- `extraction`: original structured fields, including printed source snippets.
-- `validated_pair`: converted Decimal values and normalized units, only if valid.
-- `comparison`: outcome, findings, components, currency, and potential net amount.
-- `review_issues`: blocking reasons; any blocker removes all findings and the total.
-- `claim_draft`: generated subject and body only for a completed discrepancy case.
-- `documents` and `extraction_metadata`: file hashes, page counts, model, versions,
-  request IDs, token usage, and latency; these metadata do not contain source text.
-- `events` and `confirmations`: local workflow history and recorded pairing confirmation.
-
-The report itself **does contain document data**. Store it privately. This workspace
-is under OneDrive and may sync generated outputs according to your OneDrive settings.
-The CLI does not offer account isolation or encryption. The hosted API provides
-owner isolation, private object storage and encrypted application backups.
-
-`report.json` is replaced atomically. `claim_email.txt` is written only for
-`CLAIM_DRAFTED`; an obsolete draft file is removed on a no-draft rerun. Each file
-replacement is atomic, but the two files are not a database transaction. Do not run
-two processes into the same output directory; a lock prevents this. Following a
-crash, remove `.avoirly.lock` only after verifying no runner is using that directory.
-
-Exit codes: `0` = completed comparison/draft, `2` = review required, `1` = technical
-failure. Invalid CLI arguments use argparse's standard exit code `2` with usage help.
-
-## Review and supported checks
-
-Supported cases have matching supplier, buyer, currency and PO reference, positive
-quantities, tax-exclusive nonnegative prices, explicit tax rates, unique lines,
-and no adjustments. MAD, EUR, USD and GBP are supported. Arithmetic uses Decimal
-precision 48, half-up currency rounding, and the guide's 0.01 tolerance. Excess
-quantity and price components are not double-counted. One product's favorable
-price does not reduce another product's finding.
-
-Matching uses exact normalized SKUs, then unique normalized descriptions only when
-at least one SKU is missing. Punctuation and leading zeros remain significant in
-SKUs. Units use a small explicit alias map; no pack or unit conversions occur.
-As a conservative first-phase choice, a changed description on a matching SKU
-requires review too, because it may conceal a pack-size or model change. This may
-increase review frequency. All extraction warnings block automatic drafts until
-the ambiguity has been resolved. No model confidence score is used.
-
-When the invoice has no PO reference, record a human pairing confirmation:
+Open three PowerShell terminals from the repository root:
 
 ```powershell
-uv run --project backend --locked python -m recovery.cli --po ./my-po.pdf --invoice ./my-invoice.png --out ./output/case-1 --confirm-pair --actor "Hanane" --reason "Verified these documents refer to the same order"
+# Terminal 1: API
+$env:DATABASE_URL = 'postgresql+psycopg://avoirly:local-avoirly-only@127.0.0.1:55432/avoirly'
+. ./scripts/local-env.ps1
+python -m uv run --project backend --locked avoirly-api
 ```
-
-That confirmation is tied to the extraction revision hash and bypasses only the
-missing-reference issue. It cannot override conflicting references, identities,
-unsupported charges, or any other validation rule.
-
-Phase 1 has no owner-wide history database. To detect repeats across local cases,
-pass prior reports explicitly (the flag can be repeated):
 
 ```powershell
-uv run --project backend --locked python -m recovery.cli --fixture ./samples/pair.json --out ./output/another-case --previous-report ./output/demo/report.json
+# Terminal 2: worker; required even for a manually reviewed comparison
+$env:DATABASE_URL = 'postgresql+psycopg://avoirly:local-avoirly-only@127.0.0.1:55432/avoirly'
+. ./scripts/local-env.ps1
+python -m uv run --project backend --locked avoirly-worker
 ```
-
-A repeated supplier/invoice number or source file hash blocks the new claim. Use
-the original case instead. Reusing an output directory is a rerun of that case.
-History not supplied to the CLI cannot be checked; mandatory owner-scoped duplicate
-checks belong to Phase 2. Original/corrected extraction version storage and manual
-line-pairing controls also belong to Phase 2. Do not treat edited fixture JSON as
-an audited correction process for real documents.
-
-The tool does not claim tax credits, offset across products, check cumulative
-invoices, infer missing numbers, negotiate, or send email. Review the source and
-draft yourself before using it outside Avoirly.
-
-## Tests and live verification
 
 ```powershell
-uv run --project backend --locked pytest backend/tests -q
-uv run --project backend --locked ruff check backend scripts
+# Terminal 3: web
+cd web
+npm ci
+npm run dev
 ```
 
-The offline suite covers the guide's calculation examples, tolerances, invalid
-numbers, identity checks, matching ambiguity, pack/unit conflicts, source evidence,
-file validation, SDK response shapes, retry limits, refusal handling, local duplicate
-checks, guarded workflow events, atomic writes, and stale draft cleanup.
+Open **http://127.0.0.1:3000**; API docs are at
+**http://127.0.0.1:8000/docs**. Stop processes with Ctrl+C and PostgreSQL with
+`docker compose stop postgres`; stopping preserves its named volume.
 
-The opt-in live test sends only the bundled synthetic PDF and PNG. It is skipped
-unless explicitly enabled:
+Without a provider key, upload both sources and enter complete values through
+**Vérifier les données** before saving and rerunning. Unknown or unsupported values
+still require review. For automatic extraction, set `OPENAI_MODEL` on API and worker,
+and `OPENAI_API_KEY` **only on the worker**, before starting them. Configure keys
+privately; `.env.example` is a reference and is not automatically loaded.
+The deployed snapshot and its evaluation settings are in [EVALUATION.md](docs/EVALUATION.md).
+
+The prepared Windows standalone PostgreSQL alternative uses port **55433**, while
+Docker uses **55432**. They are different databases. See [backend setup](docs/BACKEND.md)
+for that alternative and [web setup](docs/WEB.md) for the interface workflow.
+
+## Supported scope and limits
+
+- Matching supplier, buyer, currency and PO reference; missing references require
+  explicit human pairing confirmation. Conflicting references remain blocked.
+- Positive quantities, tax-exclusive nonnegative prices, explicit tax rates,
+  unique eligible lines and no unsupported adjustments.
+- Exact normalized SKUs, then unique normalized descriptions when a SKU is missing.
+  No fuzzy matching, pack conversions or silent unmatched-line removal.
+- MAD, EUR, USD and GBP; Decimal calculations with half-up currency rounding and
+  a 0.01 tolerance. No tax-credit calculation or cross-invoice reconciliation.
+- At most 10 MiB per file, 10 PDF pages, 25 megapixels per image and 100 extracted
+  product lines. Invalid, encrypted or unsupported files are rejected.
+- Every unresolved extraction warning blocks a draft. Confirmation cannot bypass
+  mismatches, unsupported charges or other validation failures.
+
+Only synthetic data should be used until the hosted acceptance gates pass.
+Never commit documents, reports, passwords, API keys or backup keys. Hosted
+deletion revokes live access immediately and queues physical object cleanup;
+retained encrypted backups have their own retention. The CLI writes private
+plaintext reports and provides no account isolation. [CLI details](docs/CLI.md).
+
+## Verification
 
 ```powershell
-$env:AVOIRLY_LIVE = "1"
-uv run --project backend --locked pytest backend/tests/test_live.py -m live -q
+python -m uv run --project backend --locked ruff check backend/src backend/tests scripts
+python -m uv run --project backend --locked pytest backend/tests -q
+cd web
+npm ci
+npx playwright install chromium
+npm run typecheck
+npm run build
+npm run test:e2e
 ```
 
-This opt-in test does not run in ordinary CI. Separate real hosted browser
-acceptance and the [labeled live evaluation](docs/EVALUATION.md) passed on
-15 October 2026; CI fixtures are not presented as live-model evidence.
+Database and browser tests need a disposable PostgreSQL test database through
+`AVOIRLY_TEST_DATABASE_URL`; restore tests also need matching PostgreSQL client
+tools and a role with `CREATEDB`. Database tests skip explicitly if not configured.
+See [TESTING.md](docs/TESTING.md) for exact prerequisites and interpretation.
+CI browser tests use synthetic extraction fixtures; they do not make paid API calls.
+Live extraction requires separate configuration and explicit opt-in.
 
-## Project files
+## Documentation
 
-| Location | Purpose |
-| --- | --- |
-| `backend/src/recovery/models.py` | Extraction and validated data contracts |
-| `backend/src/recovery/extraction.py` | File validation and bounded OpenAI adapter |
-| `backend/src/recovery/validation.py` | Supported-case and arithmetic checks |
-| `backend/src/recovery/matching.py` | Unique deterministic line matching |
-| `backend/src/recovery/comparison.py` | Pure Decimal discrepancy calculations |
-| `backend/src/recovery/claims.py` | French and English draft templates |
-| `backend/src/recovery/workflow.py` | Legal state map and synchronous workflow |
-| `backend/src/recovery/cli.py` | Command, reports, and file output |
-| `backend/tests/` | Offline acceptance suite and opt-in live check |
-| `samples/` | Synthetic extraction JSON, PO PDF and invoice PNG |
-| `scripts/generate_samples.py` | Rebuild the synthetic source documents |
-| `docs/SPEC.md` | Text of the supplied build guide |
-| `docs/PROGRESS.md` | Completed phase, checks and remaining gates |
+| Guide                                          | Read it for                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------------ |
+| [Demo walkthrough](docs/DEMO.md)               | A synthetic interview/demo flow and honest talking points                |
+| [Architecture](docs/ARCHITECTURE.md)           | Components, trust boundaries, recovery and design decisions              |
+| [CLI and reports](docs/CLI.md)                 | Live/fixture commands, JSON output, pairing and local duplicate history  |
+| [Backend](docs/BACKEND.md)                     | Database setup, API routes, corrections, idempotency and worker recovery |
+| [Web interface](docs/WEB.md)                   | Local interface setup and the French review workflow                     |
+| [Recovery tracking](docs/RECOVERY_TRACKING.md) | Manual sent/promised/confirmed records, evidence and migration           |
+| [Testing](docs/TESTING.md)                     | Offline, PostgreSQL, browser, CI and paid live checks                    |
+| [Evaluation](docs/EVALUATION.md)               | Recorded live results, methodology, cost estimates and limitations       |
+| [Self-hosting](docs/SELF_HOSTING.md)           | Current Oracle/Supabase deployment and protected configuration           |
+| [Configuration checklist](docs/CONFIGURE.md)   | Hosted acceptance gates and managed-provider alternative                 |
+| [Operations](docs/OPERATIONS.md)               | Monitoring, alerts, encrypted backups and isolated restores              |
+| [Pilot readiness](docs/PILOT_READY.md)         | Configured credentials and remaining work before real data               |
+| [Progress](docs/PROGRESS.md)                   | Dated implementation and verification history                            |
+| [Build specification](docs/SPEC.md)            | Reference text from the supplied project guide                           |
+
+Source layout: `backend/src/recovery/` contains the domain core, API, worker and
+database models; `backend/tests/` its tests; `web/` the interface and browser tests;
+`scripts/` evaluation and operator helpers; `deploy/self-hosted/` the deployment
+overlays; `samples/` visibly synthetic example documents. No public demo credentials
+or secrets are included.

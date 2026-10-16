@@ -5,9 +5,10 @@ projects running. The alternative is self-hosted Supabase and Avoirly containers
 on an Oracle Always Free ARM VM. The synthetic demonstration is deployed; full
 hosted-pilot acceptance remains incomplete. Live extraction is enabled under the
 separately authorized USD 5 initial API-testing allowance; that is not a hosting
-subscription. The remaining credential is the deferred alert SMTP app password.
+subscription. Gmail SMTP is configured and accepted one authorized test alert;
+the operator confirmed receipt. No credential is currently missing.
 
-## Deployed demonstration — verified 15 October 2026
+## Deployed demonstration — browser verified 15 October; health checked 16 October 2026
 
 The user-created Casablanca VM runs Ubuntu 24.04 Minimal ARM with 2 OCPUs and
 12 GB configured memory. Docker Engine and Compose were installed from Docker's
@@ -119,7 +120,7 @@ installation without a reviewed rotation procedure.
    contains credentials and must not be printed. The overlay binds the upstream
    gateway only to loopback and removes the pooler's published database ports.
 8. Start only the needed Supabase services (`db auth rest storage imgproxy meta
-   studio api-gw`) and `avoirly-proxy`; skip Realtime, Functions and the pooler.
+studio api-gw`) and `avoirly-proxy`; skip Realtime, Functions and the pooler.
    Build the application images, run migrations explicitly using `avoirly-api`
    with `--no-deps`, then start API, worker and web. Before the first migration,
    apply `deploy/self-hosted/application-schema.sql` through the private database
@@ -146,9 +147,10 @@ On this server, `/usr/local/bin/avoirly-ops` runs the Compose operations contain
 The private runtime is `/home/ubuntu/avoirly-infra/runtime`; its configuration and
 generated signing keys are outside Git. Systemd timers run encrypted application
 backups daily at **02:00 UTC** and monitoring every **five minutes**. Both services
-reported success on 15 October, including the overnight scheduled backup. The
-tracked timer installer and SMTP failure hook are installed; external alert
-delivery remains unconfigured pending the deferred app password.
+reported success again on 16 October. The
+tracked timer installer and SMTP failure hook are installed. The app password is
+configured privately, and Gmail SMTP accepted the one authorized test alert.
+The operator confirmed test receipt; actual failure-notification delivery remains unverified.
 
 Operator commands after connecting with SSH:
 
@@ -196,12 +198,16 @@ copies after changes and establish recurring off-VM copies before real use.
 The configuration/Auth bundle was refreshed after OpenAI configuration and release
 on 15 October, authenticated by an encryption round trip and copied off the VM
 with a matching SHA-256 checksum. A fresh encrypted application archive was also
-copied off the VM; it was not an additional full-provider restore test.
+copied off the VM; it was not an additional full-provider restore test. After SMTP
+configuration, a second refreshed encrypted bundle included the app password and
+operations units. Encryption authentication and off-VM checksums passed; no new
+full-provider restoration was performed.
 
 Monitoring currently checks worker heartbeat, leases, queued deletions, failures,
-reported spending and pricing; all checks passed. It has **no external notification
-delivery configured**. The installed failure hook waits for protected SMTP
-configuration and a delivered test. Remaining gates include alert delivery, full
+reported spending and pricing; all checks passed. External SMTP notification is
+configured, Gmail SMTP accepted one test and the operator confirmed receipt.
+Actual monitor/backup failure-notification delivery remains unverified. Remaining
+gates include those failure-alert checks, full
 provider recovery/recurring off-VM copies and participant/data-location/retention
 confirmation. Keep use synthetic until those
 gates pass. Security updates, pinned service upgrades and certificate/key rotation

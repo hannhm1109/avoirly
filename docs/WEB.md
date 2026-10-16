@@ -17,8 +17,13 @@ confirmed net amounts separate by currency. See [RECOVERY_TRACKING.md](RECOVERY_
 
 ## Start locally
 
-First complete [backend setup](BACKEND.md), including the database migration.
-For the prepared Windows workspace, start standalone PostgreSQL once:
+For a new checkout, follow the [README quick start](../README.md#run-the-web-app-locally)
+to start Docker PostgreSQL on port 55432 and run migrations. The commands below
+describe the prepared Windows standalone database on port 55433. These databases
+do not share data; preserve the explicit `DATABASE_URL` from the chosen setup in
+every API and worker shell.
+
+For the prepared standalone workspace, start PostgreSQL once:
 
 ```powershell
 ./scripts/start-local-postgres.ps1
@@ -69,7 +74,7 @@ configuration described in [CONFIGURE.md](CONFIGURE.md).
    invalidates earlier results, and reruns all validation and matching rules.
 5. Review the quantities, unit prices, quantity/price components and potential
    credit excluding tax. Edit the subject and body, then save, copy or download.
-   Changes are saved before export. No action sends email or records recovery.
+   Changes are saved before export. Draft actions send no email and record no recovery.
 
 Every unresolved warning continues to block drafting. Unsupported charges, tax
 bases, mismatches and ambiguous lines cannot be bypassed by pairing confirmation.

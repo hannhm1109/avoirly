@@ -3,17 +3,17 @@
 Avoirly is deployed on the Oracle server. This page separates missing credentials
 from acceptance work; it does not certify readiness for real supplier data.
 
-## Configuration status — 15 October 2026
+## Configuration status — checked 16 October 2026
 
-| Setting | Status | Where it belongs |
-| --- | --- | --- |
-| Supabase publishable/secret keys and JWT signing keys | Configured | Private server runtime; only the publishable key reaches the web service |
-| Database password, SSH key, metrics token and backup encryption key | Configured | Protected operator/server storage, outside Git |
-| OpenAI project API key | Configured and live-tested | Worker environment only |
-| Compatible model and current input/output rates | `gpt-5.4-mini-2026-03-17`; USD 0.75 input / 4.50 output per million tokens | Explicit API/worker model; rates on worker |
-| API testing budget and enforced provider spend limit | US$5 initial tests authorized; user confirmed enforced US$5 monthly project limit | Dedicated OpenAI project's Limits settings |
-| Alert SMTP app password | Deferred by user; still missing | Protected operations configuration only |
-| Alert destination and test authorization | Destination and one Gmail SMTP test authorized | Private operations configuration |
+| Setting                                                             | Status                                                                            | Where it belongs                                                         |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Supabase publishable/secret keys and JWT signing keys               | Configured                                                                        | Private server runtime; only the publishable key reaches the web service |
+| Database password, SSH key, metrics token and backup encryption key | Configured                                                                        | Protected operator/server storage, outside Git                           |
+| OpenAI project API key                                              | Configured and live-tested                                                        | Worker environment only                                                  |
+| Compatible model and current input/output rates                     | `gpt-5.4-mini-2026-03-17`; USD 0.75 input / 4.50 output per million tokens        | Explicit API/worker model; rates on worker                               |
+| API testing budget and enforced provider spend limit                | US$5 initial tests authorized; user confirmed enforced US$5 monthly project limit | Dedicated OpenAI project's Limits settings                               |
+| Alert SMTP app password                                             | Configured; one test accepted by Gmail SMTP and receipt confirmed                 | Root-owned mode-0600 operations configuration                            |
+| Alert destination and test authorization                            | Destination and one Gmail SMTP test authorized                                    | Private operations configuration                                         |
 
 No Stripe key or Supabase Pro subscription is required for Phases 1–5. Billing
 and subscriptions are Phase 6. HTTPS certificates are already managed by Caddy;
@@ -36,8 +36,9 @@ No supplier email sending is introduced by operational alerts.
 
 ## Enter secrets privately on this Windows computer
 
-The OpenAI secret is already saved and installed. When ready to configure the
-remaining Gmail credential, run this from the project folder; input is hidden:
+Both the OpenAI and Gmail SMTP secrets are saved and installed. No credential
+is currently missing. To replace the Gmail app password, use this hidden prompt
+from the project folder:
 
 ```powershell
 .\scripts\save-pilot-secret.ps1 -Name GmailSMTP
@@ -73,16 +74,19 @@ Windows identity; maintain independent copies in a password manager.
 - [Labeled evaluation](EVALUATION.md): 20 development pairs and five fresh held-out
   pairs, zero false drafts, all nine ambiguous cases blocked, one conservative
   supported scan requiring review. This is not a production accuracy guarantee.
-- All worker preflight and monitor gates pass; the SMTP hook is installed but
-  has no credentials or delivered test. No email has been sent.
+- All worker preflight and monitor gates pass. SMTP credentials are installed
+  privately and one authorized test alert was accepted by Gmail SMTP. The operator
+  confirmed receipt. No supplier email has been sent.
 - Refreshed encrypted configuration/Auth and application backups copied off the
-  VM after configuration, with matching ciphertext checksums.
+  VM after configuration, with matching ciphertext checksums. A further refreshed
+  bundle includes SMTP configuration and installed operations units; encryption
+  authentication and the off-VM ciphertext checksum passed.
 
 ## Remaining acceptance work
 
-1. Configure operational alerts when the deferred app password is supplied, then
-   deliver the already-authorized single test and confirm
-   receipt. Verify both monitor and backup failures reach the operator.
+1. Exercise actual monitor/backup failure-notification delivery in a controlled
+   drill. Normal SMTP test receipt is confirmed; the shared failure hooks are
+   installed, but a failed scheduled job has not triggered a verified email.
 2. Establish recurring off-VM application and configuration/Auth backups and
    test full Supabase recovery. The initial encrypted configuration bundle was
    authenticated but has not undergone full provider restoration.
@@ -92,3 +96,7 @@ Windows identity; maintain independent copies in a password manager.
 The [configuration checklist](CONFIGURE.md) remains the acceptance record.
 READMEs must distinguish implemented features, actual hosted verification and
 pending live gates. New features or paid plans do not replace these checks.
+
+On 16 October, all ten hosted worker preflight checks and all six monitor checks
+passed. Scheduled backup and monitor services reported success. No new test
+email or paid extraction was sent during the documentation check.

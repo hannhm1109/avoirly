@@ -352,3 +352,49 @@ Before accepting real supplier documents: complete alert delivery, recurring
 off-VM copies/full provider recovery, and participant/operator/privacy/retention
 configuration. [PILOT_READY.md](PILOT_READY.md) is the concise remaining-work record.
 Phases 1–5 are implemented; Phase 6 paid plans/payments/onboarding has not started.
+
+SMTP configuration checkpoint later on 15 October: the user saved the dedicated
+Gmail app password through the hidden local helper. It was transferred privately
+to a root-owned mode-0600 server environment file, outside Git. Both monitor and
+backup units reference the shared failure handler. Exactly one authorized test
+was sent through the installed systemd test service; Gmail SMTP accepted it and
+the private journal recorded success. The operator confirmed receiving the test
+email; an actual scheduled-job failure notification was not induced. The
+monitor remained healthy. The refreshed configuration/Auth backup now includes
+SMTP configuration and installed operation units, passed encryption authentication
+and was copied off-VM with a matching ciphertext SHA-256. No supplier mail was sent.
+
+## Documentation and deployment check ? 16 October 2026
+
+Recorded the completed Gmail SMTP configuration and the operator-confirmed test
+receipt. No additional email was sent. The deployment passed all ten worker
+preflight gates and all six monitor checks; backup and monitor services reported
+success. This was a health/configuration check, not another full browser or
+provider-recovery test.
+
+Reworked the README around the complete application rather than its early CLI
+phase: capabilities, current verified state, architecture, offline and web quick
+starts, supported scope, testing and a documentation index. Added dedicated
+architecture, CLI/report, testing and synthetic interview/demo guides. Updated
+backend/web setup to distinguish Docker port 55432 from the prepared standalone
+port 55433 and removed stale claims that no hosted extraction had been verified.
+
+The documented offline fixture ran successfully through the installed backend
+interpreter, producing the expected 200.00 MAD draft. Local Compose configuration
+parsed, but Docker Desktop's Linux engine was unavailable, and uv was not installed
+on the system Python PATH/module environment. The new-checkout instructions
+explicitly install uv before use. No fresh local Docker integration/browser run
+or paid model call was claimed for this documentation pass. Existing CI and
+hosted evidence remain tied to application commit `5b0941f`.
+
+Remaining real-data gates are unchanged: actual failed-job email delivery,
+recurring independent backups/full Supabase recovery, and participant/privacy/
+retention configuration. Phase 6 remains unstarted.
+
+Documentation verification: local links/heading anchors and code-fence balance
+passed across README and all 14 Markdown guides; live-result summary denominators,
+the successful offline fixture and the copied synthetic screenshot were checked.
+New documentation was checked for secret patterns and the private operator address.
+The screenshot was inspected and contains synthetic data only. Markdown formatting
+passed. This update changes documentation only; it does not rebuild the tested
+application images or send another email.

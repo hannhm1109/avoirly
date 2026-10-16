@@ -8,7 +8,8 @@ The backend supports explicit local development and Phase 4 hosted mode. Hosted
 mode requires signed Supabase sessions, an invited-user allowlist, TLS database
 access and private object storage. See [CONFIGURE.md](CONFIGURE.md) and
 [OPERATIONS.md](OPERATIONS.md) for setup and outstanding pilot gates. The examples
-below describe local mode. No email is sent.
+below describe local mode. The API does not send supplier email; hosted operational
+alerts use a separate protected SMTP configuration.
 
 Phase 5 adds a manual ledger for externally sent claims, supplier notes, promises
 and evidence-backed partial credits. See [RECOVERY_TRACKING.md](RECOVERY_TRACKING.md)
@@ -16,10 +17,12 @@ for its named endpoints, ownership/version guards and migration `0003_phase5`.
 
 ## Start on this computer
 
-The verified local setup uses standalone PostgreSQL on `127.0.0.1:55433`.
-Docker Compose is also configured on `127.0.0.1:55432`, with data in the
-`avoirly_pg` named volume. Its container initially became healthy, but later
-connections stalled; the Docker acceptance checks have not passed yet.
+The prepared Windows setup uses standalone PostgreSQL on `127.0.0.1:55433`.
+For a new checkout, Docker Compose provides PostgreSQL on `127.0.0.1:55432`,
+with data in the `avoirly_pg` named volume. Start Docker Desktop before using it.
+An early local Docker connection problem is historical; subsequent Linux CI and
+the Oracle ARM deployment passed container checks. On 16 October the local Docker
+engine was not running, so local container acceptance was not repeated.
 
 Run these from the Avoirly folder in PowerShell:
 
@@ -43,8 +46,10 @@ $env:OPENAI_MODEL = "your-selected-compatible-model"
 ```
 
 The API also needs `OPENAI_MODEL` set **before it starts** to enqueue live analysis.
-No default model is chosen. As in Phase 1, the model must support Chat Completions,
-vision, PDF input, and Structured Outputs. Real extraction is not yet verified here.
+No default model is chosen. The model must support Chat Completions, vision, PDF
+input and Structured Outputs. Separate real hosted extraction and labeled live
+evaluation passed on 15 October; see [EVALUATION.md](EVALUATION.md). This does not
+imply that an unconfigured local worker can make model calls.
 
 Stop the API and worker with Ctrl+C. Stop the standalone database when finished:
 
@@ -55,13 +60,13 @@ Stop the API and worker with Ctrl+C. Stop the standalone database when finished:
 ## Set up on another computer
 
 ```powershell
-python -m pip install uv
-uv sync --project backend --locked
+python -m pip install uv==0.12.19
+python -m uv sync --project backend --locked
 docker compose up -d --wait postgres
 $env:DATABASE_URL = "postgresql+psycopg://avoirly:local-avoirly-only@127.0.0.1:55432/avoirly"
 . ./scripts/local-env.ps1
-uv run --project backend --locked alembic -c backend/alembic.ini upgrade head
-uv run --project backend --locked avoirly-api
+python -m uv run --project backend --locked alembic -c backend/alembic.ini upgrade head
+python -m uv run --project backend --locked avoirly-api
 ```
 
 The Compose password is for local development only. The standalone Windows runtime
@@ -93,25 +98,25 @@ All routes below use `/api/v1`. IDs are UUIDs. Amounts in JSON are decimal strin
 Every mutation after creation uses `expected_version`; reload after a 409 conflict.
 Never send `owner_id`: it is resolved by the server's identity dependency.
 
-| Method and route | Request / response |
-| --- | --- |
-| `POST /cases` | Create a `PENDING` case; returns ID, version and revision |
-| `POST /cases/{id}/documents` | Multipart `role=PO` or `INVOICE`, `expected_version`, `file`; returns new version |
-| `POST /cases/{id}/analyze` | JSON `expected_version`, optional `language=fr`; requires `Idempotency-Key`; returns 202 and job ID |
-| `GET /cases?limit=20&offset=0` | Owner-scoped page of cases; no mixed-currency aggregate |
-| `GET /cases/{id}` | Current documents, raw/corrected extraction, comparison, issues, draft and job history |
-| `GET /cases/{id}/events` | Paginated audit history |
-| `GET /documents/{id}/content` | Owner-checked private bytes; no public storage path |
-| `PUT /cases/{id}/review` | `expected_version`, complete `corrected` extraction pair, `reason`, optional `confirm_pair` and `mappings` |
-| `PATCH /cases/{id}/draft` | `expected_version`, `subject`, `body`; appends a draft version |
-| `POST /cases/{id}/retry` | Same request shape as Analyze, distinct `Idempotency-Key`; only for `FAILED` cases |
-| `POST /cases/{id}/close` | `expected_version` and `close_reason` |
-| `DELETE /cases/{id}` | JSON `expected_version`, `confirmed=true`; cancels work and revokes content access |
+| Method and route               | Request / response                                                                                         |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `POST /cases`                  | Create a `PENDING` case; returns ID, version and revision                                                  |
+| `POST /cases/{id}/documents`   | Multipart `role=PO` or `INVOICE`, `expected_version`, `file`; returns new version                          |
+| `POST /cases/{id}/analyze`     | JSON `expected_version`, optional `language=fr`; requires `Idempotency-Key`; returns 202 and job ID        |
+| `GET /cases?limit=20&offset=0` | Owner-scoped page of cases; no mixed-currency aggregate                                                    |
+| `GET /cases/{id}`              | Current documents, raw/corrected extraction, comparison, issues, draft and job history                     |
+| `GET /cases/{id}/events`       | Paginated audit history                                                                                    |
+| `GET /documents/{id}/content`  | Owner-checked private bytes; no public storage path                                                        |
+| `PUT /cases/{id}/review`       | `expected_version`, complete `corrected` extraction pair, `reason`, optional `confirm_pair` and `mappings` |
+| `PATCH /cases/{id}/draft`      | `expected_version`, `subject`, `body`; appends a draft version                                             |
+| `POST /cases/{id}/retry`       | Same request shape as Analyze, distinct `Idempotency-Key`; only for `FAILED` cases                         |
+| `POST /cases/{id}/close`       | `expected_version` and `close_reason`                                                                      |
+| `DELETE /cases/{id}`           | JSON `expected_version`, `confirmed=true`; cancels work and revokes content access                         |
 
 Example Analyze request:
 
 ```json
-{"expected_version": 3, "language": "fr"}
+{ "expected_version": 3, "language": "fr" }
 ```
 
 Use a new unique request key for a new action and the same key and body for its
@@ -190,7 +195,7 @@ In local mode, the developer identity is a fixed server environment value. The A
 select it by header, body, or query parameter. The bundled API runner binds only
 to loopback; requests from non-loopback clients and unapproved origins are refused.
 Omitting an explicit mode prevents startup. Do not put local mode behind a public
-proxy. Hosted mode instead requires the full managed configuration and verifies
+proxy. Hosted mode instead requires full signed-session configuration and verifies
 signed user JWTs; no developer identity override is accepted. Phase 4 tests use
 real signatures to verify account isolation, with provider key discovery mocked.
 
