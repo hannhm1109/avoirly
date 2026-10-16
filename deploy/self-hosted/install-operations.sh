@@ -68,4 +68,30 @@ done
 systemd-analyze verify /etc/systemd/system/avoirly-backup.service /etc/systemd/system/avoirly-monitor.service /etc/systemd/system/avoirly-alert@.service /etc/systemd/system/avoirly-alert-test.service
 systemctl daemon-reload
 systemctl enable --now avoirly-backup.timer avoirly-monitor.timer
+cat > /etc/systemd/system/avoirly-full-backup.service <<'UNIT'
+[Unit]
+Description=Avoirly encrypted full server recovery snapshot
+After=network-online.target docker.service
+Requires=docker.service
+OnFailure=avoirly-alert@%n.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/avoirly-ops full-backup
+ExecStopPost=/usr/local/bin/avoirly-ops resume-recovery
+TimeoutStartSec=15min
+PrivateTmp=true
+NoNewPrivileges=true
+UNIT
+cat > /etc/systemd/system/avoirly-full-backup.timer <<'UNIT'
+[Unit]
+Description=Daily Avoirly full recovery snapshot
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+Persistent=true
+[Install]
+WantedBy=timers.target
+UNIT
+systemd-analyze verify /etc/systemd/system/avoirly-full-backup.service
+systemctl daemon-reload
+systemctl enable --now avoirly-full-backup.timer
 printf '%s\n' 'Timers and failure-alert hook installed. SMTP delivery still requires protected configuration and an authorized test.'

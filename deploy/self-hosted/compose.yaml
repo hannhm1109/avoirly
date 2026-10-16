@@ -45,6 +45,7 @@ services:
       AVOIRLY_API_ORIGIN: https://${AVOIRLY_API_HOST}
       SUPABASE_URL: ${SUPABASE_PUBLIC_URL}
       SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:?Generate the publishable key}
+      AVOIRLY_PUBLIC_CONTACT: ${AVOIRLY_PUBLIC_CONTACT:-}
   avoirly-proxy:
     image: caddy:2.10.2-alpine
     restart: unless-stopped

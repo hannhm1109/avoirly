@@ -11,7 +11,11 @@ from email.headerregistry import Address
 from email.message import EmailMessage
 from pathlib import Path
 
-ALLOWED_UNITS = {"avoirly-backup.service", "avoirly-monitor.service"}
+ALLOWED_UNITS = {
+    "avoirly-backup.service",
+    "avoirly-monitor.service",
+    "avoirly-full-backup.service",
+}
 
 
 def send_alert(unit, *, test=False, environment=None, smtp_factory=None):

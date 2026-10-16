@@ -3,6 +3,24 @@ import path from "node:path";
 import fs from "node:fs/promises";
 const sample = (name: string) => path.resolve(__dirname, "../../samples", name);
 
+test("privacy information matches the restricted synthetic pilot", async ({
+  page,
+}) => {
+  await page.goto("/confidentialite");
+  await expect(
+    page.getByRole("heading", { name: "Un traitement que vous contrôlez." }),
+  ).toBeVisible();
+  await expect(page.locator("article")).toContainText(
+    "deux comptes de test autorisés",
+  );
+  await expect(page.locator("article")).toContainText(
+    "jusqu’à leur suppression manuelle",
+  );
+  await expect(page.locator("article")).toContainText("14 jours");
+  await expect(page.locator("article")).toContainText("Le contact public");
+  await expect(page.locator('article a[href^="mailto:"]')).toHaveCount(0);
+});
+
 test.beforeEach(async ({ request }) => {
   // This server always owns a freshly migrated disposable schema.
   const list = await (await request.get("/api/v1/cases")).json();
