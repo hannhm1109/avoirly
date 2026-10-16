@@ -159,8 +159,8 @@ The tracked installer additionally schedules full recovery snapshots at **03:00 
 They briefly pause writers and PostgreSQL for consistent physical copies; see
 [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md).
 
-Application images remain release `1c3d409`; operator scripts are at `886152f`.
-The [hardening checks](https://github.com/hannhm1109/avoirly/actions/runs/38887866103)
+Application images remain release `1c3d409`; operator scripts are at `f5415d1`.
+The [hardening checks](https://github.com/hannhm1109/avoirly/actions/runs/38927802090)
 also passed Python/PostgreSQL, browser, web and container checks. No application
 schema or API behavior changed in that operator-script update.
 

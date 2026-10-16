@@ -60,8 +60,8 @@ Verified application evidence:
   for recovery release `1c3d409`: **218 Python tests**, seven browser workflows,
   production web build and three
   container builds; the paid live test is intentionally skipped in ordinary CI.
-  [Recovery hardening CI also passed](https://github.com/hannhm1109/avoirly/actions/runs/38887866103)
-  for operator scripts at `886152f`.
+  [Recovery hardening CI also passed](https://github.com/hannhm1109/avoirly/actions/runs/38927802090)
+  for operator scripts at `f5415d1`.
 - Separate hosted browser acceptance passed with real PDF/image extraction,
   source review, a 200.00 MAD draft, editing, export and mobile layout.
 - Two-account isolation, private files, deletion, controlled worker recovery and

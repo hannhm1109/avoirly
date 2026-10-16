@@ -508,3 +508,16 @@ seconds), and pauses an already-active monitor check before stopping writers.
 CI also parses every tracked operator shell script. The normal monitor service
 was rerun successfully; the Windows task verified all four current encrypted
 snapshots and returned 0 at 15:53 UTC.
+
+Readiness fix `f5415d1` passed GitHub CI, including shell parsing, 218 Python tests,
+seven browser workflows and the container builds. After deployment, a full
+backup completed successfully and the actual monitor service returned success.
+The monitor journal recorded no failure during that backup window. Public
+contact, SMTP sender and alert recipient all matched avoirly.support@gmail.com;
+all ten worker preflight checks passed. The second email reported by the operator
+was the transient API-startup alert that this readiness wait addresses.
+
+The final post-fix snapshot also reached Windows. At 16:00 UTC, the scheduled
+copy task returned 0 and verified all five retained full snapshots. Live public
+contact and API health checks passed. The README, pilot policy, operations and
+recovery evidence now record the dedicated support account and completed checks.

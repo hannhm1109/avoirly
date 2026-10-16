@@ -135,3 +135,14 @@ Full recovery verified both Auth users, a known draft and ledger, three private
 source/proof files, ownership and secure web sessions. No production cutover,
 replacement server or public DNS failover was performed. The Windows task ran
 successfully; its availability dependency is documented in the recovery runbook.
+
+The dedicated support mailbox was verified on 16 October with both a received
+test email and an actual monitor failure email. A backup-startup race caused the
+latter: recovery now waits for the public API to answer before restarting the
+monitor timer. Commit `f5415d1` passed the complete
+[CI run](https://github.com/hannhm1109/avoirly/actions/runs/38927802090), including
+the new operator shell syntax checks. The deployed full-backup and monitor units
+then passed, with no monitor failure recorded during that backup window. The
+Windows task also uses noninteractive SSH stdin to finish without a hidden
+console wait. These are runtime/operator fixes; the application image remains
+`1c3d409`.

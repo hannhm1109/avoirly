@@ -64,6 +64,18 @@
     "new_smtp_sender_status": "Support account configured as sender and recipient; test and actual monitor failure email receipt confirmed",
     "prior_sender_retired": true,
     "test_email_receipt_confirmed": true,
-    "monitor_failure_email_receipt_confirmed": true
+    "monitor_failure_email_receipt_confirmed": true,
+    "operator_commit": "f5415d148c5b4a21f0ae9f930cedf62810ae6b9d",
+    "ci_url": "https://github.com/hannhm1109/avoirly/actions/runs/38927802090",
+    "backup_after_readiness_fix": "success",
+    "monitor_after_readiness_fix": "success",
+    "no_monitor_failure_during_backup": true,
+    "worker_preflight_all_ten_passed": true,
+    "latest_snapshot_created_at": "2026-10-16T15:58:59.561995+00:00",
+    "latest_ciphertext_sha256": "aa8060ecb160b46d97fddefebb0650743c4ced20ff9ed6a24e61c3788ecbf01b",
+    "latest_ciphertext_verified_on_windows": true,
+    "windows_scheduled_task_last_result": 0,
+    "verified_snapshots": 5,
+    "off_server_copy_checked_at": "2026-10-16T16:00:45.8250199Z"
   }
 }
