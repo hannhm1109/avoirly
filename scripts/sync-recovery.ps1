@@ -60,6 +60,20 @@ try {
             }
         }
     }
+    # Historical operator-created application/configuration test archives migrate
+    # here once. Their original UTC filename date controls expiration.
+    $avoirlyLegacy = Join-Path $avoirlyTarget 'Legacy'
+    if (Test-Path -LiteralPath $avoirlyLegacy) {
+        if ((Get-Item -LiteralPath $avoirlyLegacy).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Invalid legacy backup directory.' }
+        foreach ($avoirlyFile in (Get-ChildItem -LiteralPath $avoirlyLegacy -File)) {
+            if ($avoirlyFile.Name -match '^(?:backup-(\d{8})T\d{6}Z-[a-f0-9]{32}|control-plane-(\d{8})(?:-smtp)?)\.bin$') {
+                $avoirlyDate = if ($Matches[1]) { $Matches[1] } else { $Matches[2] }
+                $avoirlyCreated = [DateTime]::ParseExact($avoirlyDate, 'yyyyMMdd', [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AssumeUniversal).ToUniversalTime()
+                $avoirlyResolved = [IO.Path]::GetFullPath($avoirlyFile.FullName)
+                if ($avoirlyCreated -lt $avoirlyCutoff -and $avoirlyResolved.StartsWith($avoirlyTarget.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { Remove-Item -LiteralPath $avoirlyResolved }
+            }
+        }
+    }
     $avoirlyStatus = @{ succeeded = $true; checked_utc = [DateTime]::UtcNow.ToString('o'); verified_snapshots = $avoirlyCount }
     $avoirlyStatus | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $avoirlyTarget 'sync-status.json') -Encoding UTF8
     Write-Output 'Encrypted off-server recovery copies verified; server acknowledgement updated.'

@@ -15,7 +15,17 @@ def snapshot(tmp_path, *, age, copied_age):
     now = datetime(2026, 10, 16, 12, tzinfo=UTC)
     name = "full-20261016T100000Z-" + "a" * 32
     (tmp_path / "latest").write_text(name)
-    (tmp_path / (name + ".json")).write_text(json.dumps({"created_at": (now - age).isoformat()}))
+    (tmp_path / (name + ".bin")).write_bytes(b"ciphertext-fixture")
+    (tmp_path / (name + ".json")).write_text(
+        json.dumps(
+            {
+                "created_at": (now - age).isoformat(),
+                "encrypted": True,
+                "authenticated_round_trip": True,
+                "bytes": len(b"ciphertext-fixture"),
+            }
+        )
+    )
     (tmp_path / "last-offvm-confirmed").write_text((now - copied_age).isoformat())
     return monitor.check(tmp_path, now=now)
 
@@ -35,4 +45,8 @@ def test_recovery_monitor_rejects_path_traversal_and_future_ack(tmp_path):
     assert not state["off_server_copy_fresh"]
     (tmp_path / "latest").write_text("../outside")
     with pytest.raises(ValueError, match="Invalid recovery snapshot name"):
+        monitor.check(tmp_path)
+    snapshot(tmp_path, age=timedelta(0), copied_age=timedelta(0))
+    next(tmp_path.glob("*.bin")).unlink()
+    with pytest.raises(ValueError, match="Incomplete recovery snapshot"):
         monitor.check(tmp_path)

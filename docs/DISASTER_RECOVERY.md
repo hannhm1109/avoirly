@@ -20,8 +20,8 @@ The bundle includes:
   tables, Storage metadata and database roles.
 - The complete PostgreSQL custom configuration volume, including its pgsodium
   encryption key, plus the database TLS files.
-- The Storage filesystem, including source files, credit evidence and application
-  archives already present at snapshot time.
+- The Storage filesystem containing source files and credit evidence. Older
+  application archives are excluded so nesting cannot extend their retention.
 - Runtime environment, generated Supabase Compose configuration, gateway/signing
   configuration, deployment overlays, source commit, SMTP settings and systemd units.
 
@@ -32,6 +32,12 @@ Git source and Docker images must remain available separately. Caddy's ACME
 volume, OS packages, Oracle networking/IAM and the Windows SSH identity are not
 included; rebuild those separately. Public certificates can be reissued after
 the intended hostnames and DNS are restored.
+
+The pinned Storage layout uses `stub/stub/avoirly-backups` for the excluded
+application archive bucket. Recheck that layout on a Supabase upgrade. The full
+restore clears only that bucket's historical object metadata in the isolated
+restored database; source/proof objects and their metadata are preserved. A new
+application backup repopulates the empty private backup bucket after cutover.
 
 AES-256-GCM protects the complete archive. Publication requires an authenticated
 decryption round trip. The manifest hashes every snapshot file. The plaintext
@@ -128,6 +134,9 @@ An isolated restoration is not a production cutover. For an actual loss:
 3. Authenticate/decrypt to a protected directory. Restore the physical cluster,
    custom PostgreSQL volume and its ownership, TLS files, Storage filesystem and
    runtime/signing configuration using the original pinned database image.
+   Remove the excluded application archive bucket's historical object metadata
+   from the restored database, as the verification helper does, before Storage
+   starts. Do not run that cleanup against a surviving live database.
 4. Review restored credentials, host paths, origins and operator settings.
    Reinstall the tracked operations units. Keep jobs, mail and provider calls
    disabled while checking recovered state.

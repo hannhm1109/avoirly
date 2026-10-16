@@ -13,6 +13,14 @@ def check(directory, now=None):
     if not re.fullmatch(r"full-\d{8}T\d{6}Z-[a-f0-9]{32}", name):
         raise ValueError("Invalid recovery snapshot name")
     report = json.loads((directory / (name + ".json")).read_text())
+    archive = directory / (name + ".bin")
+    if (
+        not report.get("encrypted")
+        or not report.get("authenticated_round_trip")
+        or not archive.is_file()
+        or archive.stat().st_size != report["bytes"]
+    ):
+        raise ValueError("Incomplete recovery snapshot")
     created = datetime.fromisoformat(report["created_at"])
     copied = datetime.fromisoformat(
         (directory / "last-offvm-confirmed").read_text().strip().replace("Z", "+00:00")

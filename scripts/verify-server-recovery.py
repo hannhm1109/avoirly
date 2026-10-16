@@ -212,6 +212,31 @@ def main():
             time.sleep(1)
         else:
             raise ValueError("Recovered database did not start")
+        # Full snapshots intentionally omit older application-archive bytes so
+        # nesting cannot extend document retention. Remove only those historical
+        # object references from this isolated restored database, never production.
+        excluded = snap / "excluded-backup-bucket.txt"
+        if excluded.exists():
+            if excluded.read_text().strip() != "avoirly-backups":
+                raise ValueError("Unexpected excluded backup bucket")
+            run(
+                "docker",
+                "exec",
+                "-i",
+                prefix + "-db",
+                "psql",
+                "-U",
+                "supabase_admin",
+                "-d",
+                "postgres",
+                "-v",
+                "ON_ERROR_STOP=1",
+                "-q",
+                input=(
+                    b"BEGIN; SET LOCAL storage.allow_delete_query = 'true'; "
+                    b"DELETE FROM storage.objects WHERE bucket_id = 'avoirly-backups'; COMMIT;\n"
+                ),
+            )
         stage = "auth-storage-gateway"
         start("auth", aliases=["supabase-auth"])
         start("rest")
@@ -328,6 +353,7 @@ def main():
                 "application_release": manifest["application_release"],
                 "snapshot_files_verified": len(manifest["files"]),
                 "production_cutover": False,
+                "nested_application_archives_excluded": excluded.exists(),
             }
         )
         destination = root / "recovery-exports/restore-report.json"

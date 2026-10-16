@@ -12,6 +12,7 @@ exec 9>/run/lock/avoirly-full-backup.lock
 flock -n 9 || { printf '%s\n' 'Another full backup is running.' >&2; exit 1; }
 test -f "$runtime/.env"
 test -d "$runtime/volumes/storage"
+test -d "$runtime/volumes/storage/stub/stub/avoirly-backups"
 test -f /etc/avoirly/alerts.env
 test ! -e /run/avoirly-recovery-paused
 test ! -L "$root/recovery-work"
@@ -38,6 +39,8 @@ database_image="$(docker inspect --format '{{.Config.Image}}' "$database_id")"
 data_dir="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Source}}{{end}}{{end}}' "$database_id")"
 test "$data_dir" = "$runtime/volumes/db/data"
 release="$(docker inspect --format '{{.Config.Image}}' "$("${compose[@]}" ps -q avoirly-api)")"
+# systemd has no SUDO_UID; trust only this explicit checkout, not every repository.
+source_commit="$(git -c safe.directory="$active_source" -C "$active_source" rev-parse HEAD)"
 docker cp "$database_id:/etc/postgresql-custom/pgsodium_root.key" "$scratch/snapshot/pgsodium_root.key"
 docker cp "$database_id:/etc/postgresql-custom/." - | gzip > "$scratch/snapshot/postgresql-custom.tar.gz"
 printf '%s\n' 'Briefly pausing application/Auth/Storage writers for a consistent recovery snapshot.'
@@ -49,13 +52,16 @@ test "$(docker inspect --format '{{.State.Running}}' "$database_id")" = false
 test ! -f "$data_dir/postmaster.pid"
 docker run --rm --network none --entrypoint pg_controldata -v "$data_dir:/verifydata:ro" "$database_image" /verifydata | grep -Eq 'Database cluster state:.*shut down$'
 tar -C "$data_dir" -czf "$scratch/snapshot/postgres.data.tar.gz" .
-tar -C "$runtime/volumes/storage" -czf "$scratch/snapshot/storage.tar.gz" .
+# Do not nest older application archives inside a new 14-day recovery snapshot.
+# Auth/application tables and source/proof objects are still captured completely.
+tar -C "$runtime/volumes/storage" --exclude='./stub/stub/avoirly-backups' -czf "$scratch/snapshot/storage.tar.gz" .
+printf '%s\n' 'avoirly-backups' > "$scratch/snapshot/excluded-backup-bucket.txt"
 cp -p "$runtime/.env" "$runtime/docker-compose.yml" "$scratch/snapshot/runtime/"
 cp -a "$runtime/volumes/api" "$scratch/snapshot/runtime/api"
 cp -a "$runtime/volumes/db/tls" "$scratch/snapshot/runtime/tls"
 cp -p /etc/avoirly/alerts.env "$scratch/snapshot/operations/"
 cp -a /etc/systemd/system/avoirly-*.service /etc/systemd/system/avoirly-*.timer "$scratch/snapshot/operations/"
-git -C "$active_source" rev-parse HEAD > "$scratch/snapshot/source-commit.txt"
+printf '%s\n' "$source_commit" > "$scratch/snapshot/source-commit.txt"
 cp -a "$active_source/deploy/self-hosted" "$scratch/snapshot/deployment"
 resume
 "${compose[@]}" run --rm --no-deps --user 0:0 -e "AVOIRLY_DATABASE_IMAGE=$database_image" -e "AVOIRLY_RECOVERY_RELEASE=$release" -v "$scratch:/recovery" -v "$source_dir/scripts/seal-recovery.py:/operator.py:ro" avoirly-ops python /operator.py

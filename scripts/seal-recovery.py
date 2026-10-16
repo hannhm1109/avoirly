@@ -16,6 +16,7 @@ def main():
     required = [
         "postgres.data.tar.gz",
         "postgresql-custom.tar.gz",
+        "excluded-backup-bucket.txt",
         "runtime/.env",
         "runtime/docker-compose.yml",
         "storage.tar.gz",
@@ -32,7 +33,7 @@ def main():
                 path.open("rb"), "sha256"
             ).hexdigest()
     manifest = {
-        "version": 1,
+        "version": 2,
         "created_at": datetime.now(UTC).isoformat(),
         "files": entries,
         "database_format": "clean-shutdown PostgreSQL data directory tar gzip",
@@ -56,6 +57,7 @@ def main():
         "created_at": manifest["created_at"],
         "encrypted": True,
         "authenticated_round_trip": True,
+        "excludes_nested_application_archives": True,
         "database_image": manifest["database_image"],
         "application_release": manifest["application_release"],
         "snapshot_files": len(entries),
