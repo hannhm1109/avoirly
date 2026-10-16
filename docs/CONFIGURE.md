@@ -178,7 +178,8 @@ Use synthetic data until these are all checked:
       drafts in this set is a gate, not a production-wide accuracy claim.
 - [x] Public support/privacy contact avoirly.support@gmail.com supplied, configured
       and verified on the live page; alert recipient updated to that inbox.
-- [ ] New support-account SMTP sender app password saved, installed and tested.
+- [x] New support-account SMTP sender app password saved, authenticated and installed;
+      Gmail accepted its test alert. The operator confirmed test and actual monitor failure email receipt.
 - [ ] Intended real participants' document authorization/provider data controls
       confirmed. Real-participant access remains closed.
 

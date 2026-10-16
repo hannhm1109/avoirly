@@ -61,6 +61,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify container ownership with a private source checkout
         run: chmod -R go-rwx backend scripts
+      - name: Validate operator shell scripts
+        run: |
+          for script in deploy/self-hosted/*.sh; do
+            bash -n "$script"
+          done
       - run: docker build -f backend/Dockerfile -t avoirly-api:test .
       - run: docker run --rm avoirly-api:test alembic -c /app/backend/alembic.ini heads
       - run: docker build -f web/Dockerfile -t avoirly-web:test .

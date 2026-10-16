@@ -172,7 +172,8 @@ are sent to the configured model provider; confirm the provider's data controls.
 The privacy page reflects Oracle Casablanca, off-VM Windows copies, manual case
 deletion and 14-day backup retention. `AVOIRLY_PUBLIC_CONTACT` is now set to
 **avoirly.support@gmail.com**, also the operational alert recipient. The new
-account's app password is needed before SMTP sender rotation. Real-participant
+account authenticated using its dedicated app password and Gmail accepted a test
+alert. Real-participant
 admission remains closed. No legal-compliance certification is claimed.
 
 ## Phase 5 migration

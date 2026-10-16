@@ -33,7 +33,7 @@
   "limits": [
     "Same host, isolated restored containers; no replacement VM or public DNS cutover",
     "Windows encrypted-copy task requires PC, signed-in user and network",
-    "Public contact deferred; real-participant admission remains closed"
+    "Real-participant admission remains closed; real-document provider controls remain unverified"
   ],
   "restored_snapshot": {
     "created_at": "2026-10-16T10:29:18.457477+00:00",
@@ -60,8 +60,10 @@
     "address": "avoirly.support@gmail.com",
     "public_contact_verified": true,
     "alert_recipient_updated": true,
-    "new_smtp_sender_authenticated": false,
-    "new_smtp_sender_status": "Awaiting corrected account-specific app password after SMTP 535",
-    "existing_working_sender_preserved": true
+    "new_smtp_sender_authenticated": true,
+    "new_smtp_sender_status": "Support account configured as sender and recipient; test and actual monitor failure email receipt confirmed",
+    "prior_sender_retired": true,
+    "test_email_receipt_confirmed": true,
+    "monitor_failure_email_receipt_confirmed": true
   }
 }

@@ -7,8 +7,9 @@ hosted-pilot acceptance remains incomplete. Live extraction is enabled under the
 separately authorized USD 5 initial API-testing allowance; that is not a hosting
 subscription. Gmail SMTP is configured; the operator received the normal test
 and actual monitor/backup failure alerts. Public contact and alert recipient are
-now avoirly.support@gmail.com. Sending from that new account requires its own
-Gmail app password. Access remains limited to two synthetic accounts.
+now avoirly.support@gmail.com. The new account authenticated with its dedicated
+app password and Gmail accepted its test alert. Access remains limited to two
+synthetic accounts.
 
 ## Deployed demonstration — browser verified 15 October; health checked 16 October 2026
 
@@ -233,8 +234,8 @@ an always-on cloud backup or external uptime monitor.
 Only the existing two synthetic accounts are authorized. Cases stay until
 manual deletion. The privacy page reflects actual locations and retention;
 avoirly.support@gmail.com is configured as the public contact and alert recipient.
-Sender rotation awaits the new account's app password. Real-participant admission
-remains closed. Security updates, pinned service upgrades and
+The new account is also the authenticated SMTP sender; Gmail accepted its test
+alert. Real-participant admission remains closed. Security updates, pinned service upgrades and
 certificate/key rotation remain operator responsibilities. See
 [PILOT_POLICY.md](PILOT_POLICY.md) and [CONFIGURE.md](CONFIGURE.md).
 

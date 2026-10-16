@@ -44,7 +44,11 @@ source_commit="$(git -c safe.directory="$active_source" -C "$active_source" rev-
 docker cp "$database_id:/etc/postgresql-custom/pgsodium_root.key" "$scratch/snapshot/pgsodium_root.key"
 docker cp "$database_id:/etc/postgresql-custom/." - | gzip > "$scratch/snapshot/postgresql-custom.tar.gz"
 printf '%s\n' 'Briefly pausing application/Auth/Storage writers for a consistent recovery snapshot.'
-if systemctl is-active --quiet avoirly-monitor.timer; then monitor_was_active=1; systemctl stop avoirly-monitor.timer; fi
+if systemctl is-active --quiet avoirly-monitor.timer; then
+  monitor_was_active=1
+  systemctl stop avoirly-monitor.timer
+  systemctl stop avoirly-monitor.service
+fi
 if test "$monitor_was_active" = 1; then printf 'monitor\n' > /run/avoirly-recovery-paused; else printf 'none\n' > /run/avoirly-recovery-paused; fi
 paused=1
 "${compose[@]}" stop --timeout 30 "${writers[@]}"

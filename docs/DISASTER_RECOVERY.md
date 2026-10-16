@@ -12,7 +12,10 @@ to copy a cleanly shut down cluster. Expect a short maintenance interruption,
 typically tens of seconds on this small synthetic deployment. It resumes the
 services before encrypting the bundle. A protected maintenance marker, exit trap
 and systemd `ExecStopPost` attempt to resume services after failure. Monitor
-scheduling pauses during the maintenance window.
+scheduling and any active monitor check pause during the maintenance window.
+Before restarting its timer, recovery waits up to 60 seconds for the public API
+to answer successfully; Docker's started state alone is insufficient. An API
+that remains unavailable after that grace period is an actual recovery failure.
 
 The bundle includes:
 

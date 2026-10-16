@@ -5,18 +5,18 @@ from acceptance work; it does not certify readiness for real supplier data.
 
 ## Configuration status — checked 16 October 2026
 
-| Setting                                                             | Status                                                                            | Where it belongs                                                         |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Supabase publishable/secret keys and JWT signing keys               | Configured                                                                        | Private server runtime; only the publishable key reaches the web service |
-| Database password, SSH key, metrics token and backup encryption key | Configured                                                                        | Protected operator/server storage, outside Git                           |
-| OpenAI project API key                                              | Configured and live-tested                                                        | Worker environment only                                                  |
-| Compatible model and current input/output rates                     | `gpt-5.4-mini-2026-03-17`; USD 0.75 input / 4.50 output per million tokens        | Explicit API/worker model; rates on worker                               |
-| API testing budget and enforced provider spend limit                | US$5 initial tests authorized; user confirmed enforced US$5 monthly project limit | Dedicated OpenAI project's Limits settings                               |
-| Alert SMTP app password                                             | Existing transport verified; new support-account sender awaits its app password   | Root-owned mode-0600 operations configuration                            |
-| Alert destination and test authorization                            | avoirly.support@gmail.com; prior failure drills completed                         | Private operations configuration                                         |
-| Full recovery/off-VM copies                                         | Encrypted full snapshot restored successfully from Windows ciphertext             | Private server exports and LOCALAPPDATA, outside Git/OneDrive            |
-| Pilot accounts/retention                                            | Two synthetic accounts only; cases until manual deletion; backups 14 days         | Allowlist and documented pilot policy                                    |
-| Public support/privacy contact                                      | avoirly.support@gmail.com configured and verified; real participants still closed | Optional web runtime `AVOIRLY_PUBLIC_CONTACT`                            |
+| Setting                                                             | Status                                                                                            | Where it belongs                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Supabase publishable/secret keys and JWT signing keys               | Configured                                                                                        | Private server runtime; only the publishable key reaches the web service |
+| Database password, SSH key, metrics token and backup encryption key | Configured                                                                                        | Protected operator/server storage, outside Git                           |
+| OpenAI project API key                                              | Configured and live-tested                                                                        | Worker environment only                                                  |
+| Compatible model and current input/output rates                     | `gpt-5.4-mini-2026-03-17`; USD 0.75 input / 4.50 output per million tokens                        | Explicit API/worker model; rates on worker                               |
+| API testing budget and enforced provider spend limit                | US$5 initial tests authorized; user confirmed enforced US$5 monthly project limit                 | Dedicated OpenAI project's Limits settings                               |
+| Alert SMTP app password                                             | Support account authenticated; test alert accepted by Gmail                                       | Root-owned mode-0600 operations configuration                            |
+| Alert destination and test authorization                            | avoirly.support@gmail.com as sender/recipient; new test and actual monitor failure email received | Private operations configuration                                         |
+| Full recovery/off-VM copies                                         | Encrypted full snapshot restored successfully from Windows ciphertext                             | Private server exports and LOCALAPPDATA, outside Git/OneDrive            |
+| Pilot accounts/retention                                            | Two synthetic accounts only; cases until manual deletion; backups 14 days                         | Allowlist and documented pilot policy                                    |
+| Public support/privacy contact                                      | avoirly.support@gmail.com configured and verified; real participants still closed                 | Optional web runtime `AVOIRLY_PUBLIC_CONTACT`                            |
 
 No Stripe key or Supabase Pro subscription is required for Phases 1–5. Billing
 and subscriptions are Phase 6. HTTPS certificates are already managed by Caddy;
@@ -39,11 +39,11 @@ No supplier email sending is introduced by operational alerts.
 
 ## Enter secrets privately on this Windows computer
 
-OpenAI remains configured. The support/privacy contact and alert recipient are
-now **avoirly.support@gmail.com**. To send alerts from that new Gmail account,
-create its own dedicated app password with 2-Step Verification enabled and save
-it through this hidden prompt from the project folder. The previous account's
-app password does not authenticate the new account:
+OpenAI and the support-account Gmail SMTP credentials are configured.
+**avoirly.support@gmail.com** is the public contact, alert sender and recipient.
+The new account authenticated successfully and Gmail accepted its test alert.
+To replace its dedicated app password, create a new one while signed into that
+exact Google account, then save it privately from the project folder:
 
 ```powershell
 .\scripts\save-pilot-secret.ps1 -Name GmailSMTP
@@ -108,7 +108,8 @@ deletion. The public privacy page describes these choices, Oracle Casablanca,
 Windows recovery copies and external provider limitations. The operator then
 provided avoirly.support@gmail.com for both public contact and operational alerts;
 the public page and alert recipient have been updated. The earlier personal
-address remains unpublished. Sender rotation awaits the new app password.
+address remains unpublished. The new sender authenticated and Gmail accepted its
+test alert. The normal monitor and backup failure hooks use this same configuration.
 
 ## Before real participants
 

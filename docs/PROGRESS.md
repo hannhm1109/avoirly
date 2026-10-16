@@ -492,3 +492,19 @@ an inherited-console wait in headless execution; both noninteractive SSH command
 now use `-n`. The orphaned client was stopped and the updated scheduled task
 completed successfully, reporting three verified snapshots at 15:48 UTC. No
 plaintext backup was written on Windows.
+
+The operator resaved a corrected support-account app password. Gmail authentication
+then succeeded, and the root-owned SMTP configuration was atomically rotated to
+avoirly.support@gmail.com as both sender and recipient. One test alert was accepted
+by Gmail; inbox receipt confirmation was requested. The encryption/backup refresh
+includes the new SMTP configuration. All credentials stayed outside Git and chat.
+
+The operator confirmed receiving the new support-account test email and an actual
+monitor failure email. The latter occurred while the API was still starting after
+the full snapshot resumed containers: Docker reported started before the public
+API could answer. Current checks returned healthy. Recovery now waits for a
+successful public health response before restarting monitoring (bounded to 60
+seconds), and pauses an already-active monitor check before stopping writers.
+CI also parses every tracked operator shell script. The normal monitor service
+was rerun successfully; the Windows task verified all four current encrypted
+snapshots and returned 0 at 15:53 UTC.
