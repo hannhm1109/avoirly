@@ -170,8 +170,9 @@ backups age out on successful backup-job runs. Provider-managed backups and logs
 have their own retention; document those separately. Source files and extraction
 are sent to the configured model provider; confirm the provider's data controls.
 The privacy page reflects Oracle Casablanca, off-VM Windows copies, manual case
-deletion and 14-day backup retention. Public support/privacy contact is deferred
-by the operator; set `AVOIRLY_PUBLIC_CONTACT` when supplied. Real-participant
+deletion and 14-day backup retention. `AVOIRLY_PUBLIC_CONTACT` is now set to
+**avoirly.support@gmail.com**, also the operational alert recipient. The new
+account's app password is needed before SMTP sender rotation. Real-participant
 admission remains closed. No legal-compliance certification is claimed.
 
 ## Phase 5 migration

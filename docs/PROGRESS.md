@@ -462,3 +462,33 @@ snapshots and redundant encrypted drill uploads were removed after replacement
 verification; the successfully restored snapshot remains available under retention.
 The non-secret [recovery evidence](operations/2026-10-16-recovery.json) records the
 scope, hashes, results and remaining limitations.
+
+## 16 October 2026 - dedicated support mailbox
+
+The operator supplied **avoirly.support@gmail.com** and explicitly selected it
+for public support/privacy contact and operational alerts. The runtime public
+contact was updated, the web container recreated and its live mailto link verified.
+The alert recipient now uses that inbox. The existing SMTP sender remains active
+until the new Google account's own app password is supplied and authenticated;
+no sender migration or test delivery from that account is claimed yet. No
+personal mailbox address was published.
+
+Off-server encrypted copying remains enabled. A fresh scheduled task run completed
+with result 0 at 11:44 UTC and verified the two retained full snapshots. The audit
+again confirmed exactly two synthetic users, matching allowlist, disabled public
+and anonymous sign-up, private buckets and the configured public contact. This
+contact update does not admit real participants or send supplier emails.
+
+The first newly saved support-account credential was rejected by Gmail during
+SMTP authentication (535). The rotation helper authenticates before writing,
+so it preserved the existing working sender configuration. Public contact and
+alert recipient changes remain active. A corrected app password for the exact
+support account was requested privately; no successful test email from that
+new sender is claimed.
+
+The refreshed recovery snapshot includes the updated contact/recipient settings.
+The Windows task copied and verified it. Its final SSH acknowledgement exposed
+an inherited-console wait in headless execution; both noninteractive SSH commands
+now use `-n`. The orphaned client was stopped and the updated scheduled task
+completed successfully, reporting three verified snapshots at 15:48 UTC. No
+plaintext backup was written on Windows.

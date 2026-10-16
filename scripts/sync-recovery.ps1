@@ -21,7 +21,8 @@ $avoirlySSH = @('-i', $avoirlyIdentity, '-o', 'BatchMode=yes', '-o', 'StrictHost
 $avoirlyLock = $null
 try {
     $avoirlyLock = [IO.File]::Open((Join-Path $avoirlyTarget 'sync.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
-    $avoirlyNames = @(& ssh.exe @avoirlySSH $avoirlyConnection "find $SourceRoot/recovery-exports -maxdepth 1 -type f -name 'full-*.json'")
+    # These commands take no stdin; -n avoids waiting on a hidden task's console.
+    $avoirlyNames = @(& ssh.exe -n @avoirlySSH $avoirlyConnection "find $SourceRoot/recovery-exports -maxdepth 1 -type f -name 'full-*.json'")
     if ($LASTEXITCODE -ne 0 -or $avoirlyNames.Count -eq 0) { throw 'No remote recovery backups available.' }
     $avoirlyCount = 0
     foreach ($avoirlyRemote in $avoirlyNames) {
@@ -47,7 +48,7 @@ try {
         }
         $avoirlyCount++
     }
-    & ssh.exe @avoirlySSH $avoirlyConnection "date -u +%FT%TZ > $SourceRoot/recovery-exports/last-offvm-confirmed"
+    & ssh.exe -n @avoirlySSH $avoirlyConnection "date -u +%FT%TZ > $SourceRoot/recovery-exports/last-offvm-confirmed"
     if ($LASTEXITCODE -ne 0) { throw 'Backup copied, but server acknowledgement failed.' }
     # Retention only after every available remote snapshot has verified successfully.
     $avoirlyCutoff = [DateTime]::UtcNow.AddDays(-14)

@@ -55,5 +55,13 @@
     "synthetic_canary_deleted_from_live_app": true,
     "maintenance_marker_removed": true,
     "obsolete_diagnostic_snapshots_removed": true
+  },
+  "contact_update": {
+    "address": "avoirly.support@gmail.com",
+    "public_contact_verified": true,
+    "alert_recipient_updated": true,
+    "new_smtp_sender_authenticated": false,
+    "new_smtp_sender_status": "Awaiting corrected account-specific app password after SMTP 535",
+    "existing_working_sender_preserved": true
   }
 }

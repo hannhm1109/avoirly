@@ -176,9 +176,11 @@ Use synthetic data until these are all checked:
 - [x] About 20 labeled synthetic/consented pairs are evaluated; report sample size,
       supported coverage, review rate, false drafts, latency and cost. Zero false
       drafts in this set is a gate, not a production-wide accuracy claim.
-- [ ] Separate public support/privacy contact supplied and configured, and intended
-      real participants' document authorization/provider data controls confirmed.
-      The operator deferred the contact; real-participant access remains closed.
+- [x] Public support/privacy contact avoirly.support@gmail.com supplied, configured
+      and verified on the live page; alert recipient updated to that inbox.
+- [ ] New support-account SMTP sender app password saved, installed and tested.
+- [ ] Intended real participants' document authorization/provider data controls
+      confirmed. Real-participant access remains closed.
 
 Checked hosted gates were verified on 14–15 October 2026 against the self-hosted
 Oracle deployment. [SELF_HOSTING.md](SELF_HOSTING.md) records the release, evidence

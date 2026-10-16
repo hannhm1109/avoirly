@@ -86,7 +86,9 @@ Verified application evidence:
 These are small synthetic demonstrations, not production accuracy or reliability
 claims. Access remains restricted to **two synthetic accounts**. Cases stay until
 manually deleted; encrypted backups retain 14 days. The public privacy/support
-contact is deferred by the operator, and provider data controls must be confirmed
+contact is **avoirly.support@gmail.com**, verified on the live privacy page.
+Operational alerts now target that inbox; sending from the new account awaits its
+dedicated Gmail app password. Provider data controls must still be confirmed
 before real supplier documents. The Windows copy requires the PC, signed-in user
 and network to be available; it is not an always-on cloud backup service.
 See [pilot readiness](docs/PILOT_READY.md) and [pilot policy](docs/PILOT_POLICY.md).
